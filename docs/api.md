@@ -108,6 +108,19 @@ Respuesta `200`:
 
 Las categorías pertenecen siempre al club de la sesión. Desactivar una categoría no la elimina ni modifica los equipos históricos.
 
+### Plantilla y asistencia
+
+- `GET /api/v1/teams/:teamId/players`: jugadores activos ordenados por año de nacimiento, dorsal y apellidos.
+- `GET /api/v1/teams/:teamId/attendance/today`: devuelve los jugadores ausentes en la fecha actual del servidor.
+- `GET /api/v1/teams/:teamId/matches`: partidos del equipo para elegir el intervalo.
+- `GET /api/v1/teams/:teamId/attendance-summary`: resumen de faltas entre dos partidos; si no se indican, usa los dos siguientes no cancelados.
+- `POST /api/v1/teams/:teamId/attendance/absence`: registra la falta del jugador para la fecha actual del servidor; requiere rol de cuerpo técnico y CSRF en web.
+- `DELETE /api/v1/teams/:teamId/attendance/absence/:playerId`: revierte la falta de hoy; requiere rol de cuerpo técnico y CSRF en web.
+- `PATCH /api/v1/teams/:teamId/matches/:matchId/convocations/:playerId`: marca o desmarca la convocatoria del jugador para el siguiente partido.
+- `GET /api/v1/seasons/current`: devuelve la temporada activa/prioritaria del club.
+
+La consulta del resumen cuenta sólo los entrenamientos posteriores al primer partido y anteriores al siguiente, evitando atribuir al intervalo los días de partido.
+
 ### `POST /api/v1/teams`
 
 Requiere autenticación y rol `club_admin` o `coordinator`.
@@ -118,7 +131,7 @@ Entrada:
 {
   "seasonId": "00000000-0000-0000-0000-000000000002",
   "name": "Senior A",
-  "category": "Senior",
+  "categoryId": "00000000-0000-0000-0000-000000000009",
   "gender": "unspecified"
 }
 ```

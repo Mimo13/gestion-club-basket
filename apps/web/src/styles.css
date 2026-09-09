@@ -53,6 +53,27 @@ button { font: inherit; }
 .category-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .inline-editor { align-items: end; border-top: 1px solid #d9e2ec; display: flex; gap: 10px; padding-top: 14px; }
 .inline-editor label { flex: 1; }
+.attendance-toolbar { display: grid; gap: 10px; margin-bottom: 16px; }
+.attendance-toolbar label, .match-selectors label { color: #243b53; display: grid; font-weight: 700; gap: 8px; }
+.attendance-toolbar input, .match-selectors select { background: white; border: 1px solid #bcccdc; border-radius: 10px; min-height: 46px; padding: 0 12px; }
+.helper-text { color: #627d98; line-height: 1.45; margin: 0; }
+.player-list, .convocation-list { display: grid; gap: 10px; }
+.player-card { align-items: center; background: white; border: 1px solid #d9e2ec; border-radius: 16px; display: flex; gap: 12px; min-height: 76px; padding: 12px; }
+.player-card.absent { border-color: #f5a6a0; background: #fff8f7; }
+.player-number { align-items: center; background: #d9e2ec; border-radius: 12px; display: flex; flex: 0 0 42px; font-weight: 800; height: 42px; justify-content: center; }
+.player-info { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.player-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-info span { color: #627d98; font-size: .78rem; }
+.absence-button { background: #fff; border: 1px solid #e66a35; border-radius: 10px; color: #bd4b1e; cursor: pointer; font-size: .75rem; font-weight: 800; min-height: 46px; padding: 0 10px; }
+.absence-button.marked { background: #b42318; border-color: #b42318; color: white; }
+.attendance-summary { background: #eef5f9; border-radius: 18px; margin-top: 28px; padding: 18px 14px; }
+.attendance-summary h2 { font-size: 1.25rem; margin-bottom: 16px; }
+.match-selectors { display: grid; gap: 12px; margin-bottom: 14px; }
+.convocation-row { align-items: center; background: white; border-radius: 12px; display: flex; gap: 8px; justify-content: space-between; min-height: 52px; padding: 10px 12px; }
+.convocation-row > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.convocation-row strong { color: #b42318; font-size: .85rem; white-space: nowrap; }
+.callup { background: #fff8e1; border-radius: 999px; color: #8d6e00; font-size: .7rem; font-weight: 800; padding: 5px 7px; white-space: nowrap; }
+.callup.yes { background: #e3fcef; color: #147d64; }
 .topbar { align-items: center; background: #102a43; color: white; display: flex; justify-content: space-between; padding: 18px 20px; }
 .brand-kicker, .eyebrow { color: #627d98; font-size: .72rem; font-weight: 800; letter-spacing: .08em; margin: 0 0 6px; text-transform: uppercase; }
 .topbar .brand-kicker { color: #9fb3c8; }
@@ -85,6 +106,8 @@ h2 { font-size: 1rem; margin: 0 0 5px; }
 .nav-item span { font-size: 1.25rem; line-height: 1; }
 .nav-item.active { background: #e6f6ff; color: #0077b6; font-weight: 800; }
 @media (min-width: 700px) {
+  .match-selectors { grid-template-columns: 1fr 1fr; }
+  .attendance-summary { padding: 24px; }
   .topbar { padding-left: max(32px, calc((100vw - 1100px) / 2)); padding-right: max(32px, calc((100vw - 1100px) / 2)); }
   .page-content { padding: 48px 32px; }
   .bottom-nav { border: 0; border-right: 1px solid #d9e2ec; bottom: 0; flex-direction: column; justify-content: flex-start; left: 0; padding: 24px 10px; right: auto; top: 73px; width: 92px; }

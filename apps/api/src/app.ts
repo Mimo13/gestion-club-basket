@@ -6,6 +6,7 @@ import { env } from './config/env.js'
 import { adminRoutes } from './modules/identity/admin-routes.js'
 import { authRoutes } from './modules/identity/auth-routes.js'
 import { categoryRoutes } from './modules/categories/category-routes.js'
+import { attendanceRoutes } from './modules/attendance/attendance-routes.js'
 import { teamRoutes } from './modules/teams/team-routes.js'
 
 export function buildApp() {
@@ -32,6 +33,7 @@ export function buildApp() {
   void app.register(authRoutes)
   void app.register(adminRoutes)
   void app.register(categoryRoutes)
+  void app.register(attendanceRoutes)
   void app.register(teamRoutes)
 
   app.setErrorHandler((error, _request, reply) => {

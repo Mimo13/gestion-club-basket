@@ -5,11 +5,13 @@ import { LoginPage } from '../features/auth/LoginPage.js'
 import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.js'
 import { UsersPage } from '../features/admin/UsersPage.js'
 import { CategoriesPage } from '../features/settings/CategoriesPage.js'
+import { AttendancePage } from '../features/attendance/AttendancePage.js'
 import { TeamsPage } from '../features/teams/TeamsPage.js'
 
 const navItems = [
   { to: '/', label: 'Inicio', icon: '⌂' },
   { to: '/teams', label: 'Equipos', icon: '●' },
+  { to: '/attendance', label: 'Asistencia', icon: '✓' },
   { to: '/calendar', label: 'Agenda', icon: '◷' },
   { to: '/account/password', label: 'Cuenta', icon: '◉' },
 ]
@@ -56,6 +58,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/account/password" element={<ChangePasswordPage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/settings/categories" element={<CategoriesPage />} />

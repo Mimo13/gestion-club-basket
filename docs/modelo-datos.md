@@ -26,14 +26,15 @@ people ── players ── teams
 
 `people` concentra datos personales. `players` añade la dimensión deportiva. El histórico de cambios de equipo se ampliará con una tabla de asignaciones cuando se valide el flujo de altas/bajas; `current_team_id` sólo representa el estado actual del MVP.
 
-## Actividades
+## Actividades y asistencia
 
 ```text
 teams ──< activities ──< attendance >── players
-                  └── matches ──< match_player_stats >── players
+  └──< training_sessions ──< training_absences >── players
+  └──< matches ──< match_convocations >── players
 ```
 
-Una actividad puede ser entrenamiento o partido. La tabla `matches` extiende una actividad con rival, competición y marcador. La asistencia se registra por actividad y jugador, evitando duplicados.
+Una actividad puede ser entrenamiento o partido. La tabla `matches` extiende una actividad con rival, competición y marcador. Para el control rápido del equipo, `training_sessions` identifica cada fecha de entrenamiento y `training_absences` guarda quién faltó. La ausencia es reversible y su fecha se registra como fecha local de entrenamiento. `match_convocations` queda preparada para distinguir la convocatoria del partido. El resumen de asistencia cuenta las faltas entre dos partidos consecutivos.
 
 ## Principios de PostgreSQL
 

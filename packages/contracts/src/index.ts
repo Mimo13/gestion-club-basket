@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const uuidSchema = z.string().uuid()
 export const isoDateTimeSchema = z.string().datetime({ offset: true })
+export const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
 export const roleSchema = z.enum(['club_admin', 'coordinator', 'coach', 'assistant', 'viewer'])
 export type Role = z.infer<typeof roleSchema>
@@ -32,7 +33,9 @@ export const sessionResponseSchema = z.object({
 })
 export type SessionResponse = z.infer<typeof sessionResponseSchema>
 
-export const forgotPasswordInputSchema = z.object({ email: z.string().trim().email().transform((value) => value.toLowerCase()) })
+export const forgotPasswordInputSchema = z.object({
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
+})
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordInputSchema>
 
 export const resetPasswordInputSchema = z.object({
@@ -69,13 +72,6 @@ export const updateUserRoleInputSchema = z.object({ role: roleSchema })
 export const updateUserStatusInputSchema = z.object({ status: userStatusSchema })
 export const managedUsersResponseSchema = z.object({ items: z.array(managedUserSchema) })
 
-export const healthResponseSchema = z.object({
-  status: z.literal('ok'),
-  service: z.string(),
-  timestamp: isoDateTimeSchema,
-})
-export type HealthResponse = z.infer<typeof healthResponseSchema>
-
 export const categoryStatusSchema = z.enum(['active', 'inactive'])
 export type CategoryStatus = z.infer<typeof categoryStatusSchema>
 
@@ -106,9 +102,26 @@ export const createCategoryInputSchema = z.object({
 })
 export type CreateCategoryInput = z.infer<typeof createCategoryInputSchema>
 
-export const updateCategoryInputSchema = createCategoryInputSchema.partial().extend({ status: categoryStatusSchema.optional() })
+export const updateCategoryInputSchema = createCategoryInputSchema.partial().extend({
+  status: categoryStatusSchema.optional(),
+})
 export type UpdateCategoryInput = z.infer<typeof updateCategoryInputSchema>
 export const categoriesResponseSchema = z.object({ items: z.array(categorySchema) })
+
+export const healthResponseSchema = z.object({
+  status: z.literal('ok'),
+  service: z.string(),
+  timestamp: isoDateTimeSchema,
+})
+export type HealthResponse = z.infer<typeof healthResponseSchema>
+
+export const currentSeasonSchema = z.object({
+  id: uuidSchema,
+  name: z.string(),
+  startsOn: dateSchema,
+  endsOn: dateSchema,
+})
+export type CurrentSeason = z.infer<typeof currentSeasonSchema>
 
 export const teamStatusSchema = z.enum(['active', 'inactive', 'archived'])
 export type TeamStatus = z.infer<typeof teamStatusSchema>
@@ -117,6 +130,7 @@ export const teamSchema = z.object({
   id: uuidSchema,
   clubId: uuidSchema,
   seasonId: uuidSchema,
+  categoryId: uuidSchema.nullable().optional(),
   name: z.string().min(1).max(120),
   category: z.string().min(1).max(80),
   gender: z.enum(['female', 'male', 'mixed', 'unspecified']),
@@ -128,7 +142,7 @@ export type Team = z.infer<typeof teamSchema>
 
 export const createTeamInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  category: z.string().trim().min(1).max(80),
+  categoryId: uuidSchema,
   gender: z.enum(['female', 'male', 'mixed', 'unspecified']).default('unspecified'),
   seasonId: uuidSchema,
 })
@@ -149,6 +163,58 @@ export const paginatedTeamsSchema = z.object({
   offset: z.number().int().nonnegative(),
 })
 export type PaginatedTeams = z.infer<typeof paginatedTeamsSchema>
+
+export const playerSchema = z.object({
+  id: uuidSchema,
+  personId: uuidSchema,
+  teamId: uuidSchema,
+  jerseyNumber: z.number().int().min(0).max(99).nullable(),
+  firstName: z.string(),
+  lastName: z.string(),
+  fullName: z.string(),
+  birthDate: dateSchema,
+  birthYear: z.number().int(),
+  birthYearOrder: z.number().int(),
+  status: z.enum(['active', 'inactive', 'archived']),
+})
+export type Player = z.infer<typeof playerSchema>
+export const playersResponseSchema = z.object({ items: z.array(playerSchema) })
+
+export const trainingSessionSchema = z.object({
+  id: uuidSchema,
+  teamId: uuidSchema,
+  trainingDate: dateSchema,
+})
+export type TrainingSession = z.infer<typeof trainingSessionSchema>
+
+export const absenceSchema = z.object({
+  playerId: uuidSchema,
+  trainingDate: dateSchema,
+  recordedAt: isoDateTimeSchema,
+})
+export type Absence = z.infer<typeof absenceSchema>
+
+export const markAbsenceResponseSchema = z.object({
+  session: trainingSessionSchema,
+  absence: absenceSchema,
+  totalAbsencesInInterval: z.number().int().nonnegative(),
+})
+export type MarkAbsenceResponse = z.infer<typeof markAbsenceResponseSchema>
+
+export const attendanceSummaryPlayerSchema = playerSchema.extend({
+  absences: z.array(absenceSchema),
+  absenceCount: z.number().int().nonnegative(),
+  calledUp: z.boolean().nullable(),
+})
+export const attendanceSummarySchema = z.object({
+  teamId: uuidSchema,
+  fromMatchId: uuidSchema.nullable(),
+  toMatchId: uuidSchema.nullable(),
+  fromDate: dateSchema.nullable(),
+  toDate: dateSchema.nullable(),
+  players: z.array(attendanceSummaryPlayerSchema),
+})
+export type AttendanceSummary = z.infer<typeof attendanceSummarySchema>
 
 export const apiErrorSchema = z.object({
   error: z.object({

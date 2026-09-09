@@ -54,4 +54,5 @@ No se utiliza Docker. La API se ejecuta como servicio `systemd`, el frontend se 
 - [Seguridad e identidad](docs/seguridad.md)
 - Categorías iniciales y configuración: `docs/categorias.md` y Settings > Categorías
 - [Instalación portable](docs/instalacion-portable.md)
+- [Plantilla cadete masculino](docs/plantilla-cadete-masculino.md)
 - [Roadmap](roadmap.md)

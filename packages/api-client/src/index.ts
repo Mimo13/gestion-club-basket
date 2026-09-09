@@ -2,12 +2,17 @@ import {
   apiErrorSchema,
   categoriesResponseSchema,
   categorySchema,
+  playersResponseSchema,
+  attendanceSummarySchema,
   healthResponseSchema,
+  currentSeasonSchema,
   listTeamsQuerySchema,
   paginatedTeamsSchema,
   managedUsersResponseSchema,
   sessionResponseSchema,
   type CreateCategoryInput,
+  type MarkAbsenceResponse,
+  type AttendanceSummary,
   type CreateManagedUserInput,
   type CreateTeamInput,
   type Role,
@@ -61,6 +66,9 @@ export function createApiClient(baseUrl: string) {
     async health() {
       return healthResponseSchema.parse(await request('/api/v1/health'))
     },
+    async currentSeason() {
+      return currentSeasonSchema.parse(await request('/api/v1/seasons/current'))
+    },
     async login(email: string, password: string) {
       return sessionResponseSchema.parse(await request('/api/v1/auth/login', {
         method: 'POST',
@@ -105,6 +113,30 @@ export function createApiClient(baseUrl: string) {
     },
     async updateCategory(categoryId: string, input: UpdateCategoryInput) {
       return categorySchema.parse(await request(`/api/v1/settings/categories/${categoryId}`, { method: 'PATCH', body: JSON.stringify(input) }))
+    },
+    async listPlayers(teamId: string) {
+      return playersResponseSchema.parse(await request(`/api/v1/teams/${teamId}/players`))
+    },
+    async todayAbsences(teamId: string) {
+      return (await request(`/api/v1/teams/${teamId}/attendance/today`)) as { trainingDate: string; absentPlayerIds: string[] }
+    },
+    async listMatches(teamId: string) {
+      return (await request(`/api/v1/teams/${teamId}/matches`)) as { items: Array<{ id: string; opponentName: string; matchDate: string; status: string }> }
+    },
+    async attendanceSummary(teamId: string, fromMatchId?: string, toMatchId?: string): Promise<AttendanceSummary> {
+      const params = new URLSearchParams()
+      if (fromMatchId) params.set('fromMatchId', fromMatchId)
+      if (toMatchId) params.set('toMatchId', toMatchId)
+      return attendanceSummarySchema.parse(await request(`/api/v1/teams/${teamId}/attendance-summary?${params}`))
+    },
+    async markAbsence(teamId: string, playerId: string, trainingDate?: string): Promise<MarkAbsenceResponse> {
+      return (await request(`/api/v1/teams/${teamId}/attendance/absence`, { method: 'POST', body: JSON.stringify({ playerId, trainingDate }) })) as MarkAbsenceResponse
+    },
+    async removeAbsence(teamId: string, playerId: string, trainingDate: string) {
+      await request(`/api/v1/teams/${teamId}/attendance/absence/${playerId}?trainingDate=${encodeURIComponent(trainingDate)}`, { method: 'DELETE' })
+    },
+    async updateConvocation(teamId: string, matchId: string, playerId: string, calledUp: boolean) {
+      await request(`/api/v1/teams/${teamId}/matches/${matchId}/convocations/${playerId}`, { method: 'PATCH', body: JSON.stringify({ calledUp }) })
     },
     async listTeams(query: Partial<ListTeamsQuery> = {}): Promise<PaginatedTeams> {
       const parsedQuery = listTeamsQuerySchema.parse(query)

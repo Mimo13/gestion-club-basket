@@ -5,7 +5,7 @@ describe('contracts', () => {
   it('applies defaults to team creation', () => {
     const result = createTeamInputSchema.safeParse({
       name: '  Senior A ',
-      category: 'Senior',
+      categoryId: '00000000-0000-0000-0000-000000000001',
       seasonId: '00000000-0000-0000-0000-000000000001',
     })
 

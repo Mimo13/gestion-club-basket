@@ -65,10 +65,10 @@ export async function createTeam(clubId: string, input: CreateTeamInput): Promis
     `INSERT INTO teams (club_id, season_id, name, category, category_id, gender)
      SELECT $1, $2, $3, c.name, c.id, $5
      FROM categories c
-     WHERE lower(c.name) = lower(trim($4)) AND c.club_id = $1 AND c.status = 'active'
+     WHERE c.id = $4 AND c.club_id = $1 AND c.status = 'active'
        AND EXISTS (SELECT 1 FROM seasons WHERE id = $2 AND club_id = $1)
      RETURNING id, club_id, season_id, name, category, category_id, gender, status, created_at, updated_at`,
-    [clubId, input.seasonId, input.name, input.category, input.gender],
+    [clubId, input.seasonId, input.name, input.categoryId, input.gender],
   )
 
   const row = result.rows[0]
