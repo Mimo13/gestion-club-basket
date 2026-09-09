@@ -1,0 +1,8 @@
+process.env.DATABASE_URL ??= 'postgresql://club_basket_app:local-dev-change-me@127.0.0.1:5432/club_basket'
+process.env.SESSION_SECRET ??= 'test-only-session-secret'
+process.env.SESSION_TTL_DAYS ??= '30'
+process.env.NODE_ENV ??= 'test'
+process.env.API_HOST ??= '127.0.0.1'
+process.env.API_PORT ??= '3000'
+process.env.CORS_ORIGIN ??= 'http://localhost:5173'
+process.env.STORAGE_ROOT ??= './var/storage'

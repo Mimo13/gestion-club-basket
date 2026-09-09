@@ -1,0 +1,30 @@
+import type { FastifyReply, FastifyRequest } from 'fastify'
+import { findUserBySessionToken } from './auth-repository.js'
+import type { AuthenticatedUser } from './auth-repository.js'
+
+export const SESSION_COOKIE = 'club_basket_session'
+
+function getSessionToken(request: FastifyRequest): string | undefined {
+  return request.cookies[SESSION_COOKIE] ?? request.headers.authorization?.replace(/^Bearer\s+/i, '')
+}
+
+export async function getAuthenticatedUser(request: FastifyRequest): Promise<AuthenticatedUser | null> {
+  const token = getSessionToken(request)
+  return token ? findUserBySessionToken(token) : null
+}
+
+export async function requireAuthenticatedUser(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<AuthenticatedUser | undefined> {
+  const user = await getAuthenticatedUser(request)
+  if (!user) {
+    await reply.code(401).send({ error: { code: 'UNAUTHENTICATED', message: 'Es necesario iniciar sesión' } })
+    return undefined
+  }
+  return user
+}
+
+export function getRequestSessionToken(request: FastifyRequest): string | undefined {
+  return getSessionToken(request)
+}

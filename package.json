@@ -1,0 +1,21 @@
+{
+  "name": "club-basket",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Gestión de equipos de baloncesto para clubes",
+  "packageManager": "pnpm@11.5.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @club-basket/api --filter @club-basket/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:migrate": "pnpm --filter @club-basket/api db:migrate"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
