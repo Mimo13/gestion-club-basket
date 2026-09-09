@@ -42,8 +42,20 @@ CORS_ORIGIN=https://cambiar-dominio
 DATABASE_URL=postgresql://club_basket_app:CAMBIAR_PASSWORD@127.0.0.1:5432/club_basket
 STORAGE_ROOT=$DATA_DIR/storage
 SESSION_SECRET=CAMBIAR_POR_UN_SECRETO_ALEATORIO_LARGO
+SESSION_TTL_DAYS=30
+PASSWORD_RESET_URL=https://cambiar-dominio/reset-password
+SMTP_HOST=CAMBIAR_SMTP_HOST
+SMTP_PORT=587
+SMTP_USER=CAMBIAR_SMTP_USER
+SMTP_PASSWORD=CAMBIAR_SMTP_PASSWORD
+SMTP_FROM=CAMBIAR_SMTP_FROM
 EOF
   log "Se ha creado $ENV_FILE. Edita sus secretos antes de iniciar la aplicación."
+fi
+
+if grep -q 'CAMBIAR_' "$ENV_FILE" || grep -q 'https://cambiar-dominio' "$ENV_FILE"; then
+  log "Configuración pendiente en $ENV_FILE. Edita los valores CAMBIAR_* y ejecuta de nuevo el instalador."
+  exit 0
 fi
 
 if [[ ! -d "$APP_DIR/.git" ]]; then
@@ -77,11 +89,15 @@ runuser -u "$APP_USER" -- env HOME="$APP_DIR" bash -c "set -a; source '$ENV_FILE
 
 log "Instalando servicios systemd y configuración nginx"
 install -m 0644 infra/systemd/club-basket-api.service /etc/systemd/system/club-basket-api.service
+install -m 0644 infra/systemd/club-basket-identity-cleanup.service /etc/systemd/system/club-basket-identity-cleanup.service
+install -m 0644 infra/systemd/club-basket-identity-cleanup.timer /etc/systemd/system/club-basket-identity-cleanup.timer
 install -m 0644 infra/nginx/club-basket.conf /etc/nginx/sites-available/club-basket.conf
 ln -sfn /etc/nginx/sites-available/club-basket.conf /etc/nginx/sites-enabled/club-basket.conf
 rm -f /etc/nginx/sites-enabled/default
 systemctl daemon-reload
 systemctl enable --now club-basket-api
+systemctl daemon-reload
+systemctl enable --now club-basket-identity-cleanup.timer
 nginx -t
 systemctl reload nginx
 

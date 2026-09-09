@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { createTeamInputSchema, listTeamsQuerySchema } from '@club-basket/contracts'
-import { requireAuthenticatedUser } from '../identity/auth-context.js'
 import { canManageTeam } from '@club-basket/domain'
+import { requireAuthenticatedUser } from '../identity/auth-context.js'
 import { createTeam, listTeams } from './team-repository.js'
 
 export async function teamRoutes(app: FastifyInstance): Promise<void> {

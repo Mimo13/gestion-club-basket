@@ -37,12 +37,21 @@ No pasar esta contraseña en tickets, commits, logs o chats compartidos. En prod
 
 La API debe comprobar el rol y el club en cada caso de uso. La UI sólo refleja la autorización y no la sustituye.
 
+## Medidas implementadas
+
+- limitación de login y recuperación por IP/email mediante rate limiter en memoria;
+- recuperación y cambio de contraseña con tokens de un solo uso, caducidad y revocación de sesiones;
+- email de recuperación mediante adaptador SMTP configurable;
+- protección CSRF doble cookie para mutaciones web basadas en cookie;
+- limpieza de sesiones y tokens mediante servicio/timer systemd;
+- auditoría de login correcto, fallido, logout, cambio de contraseña e invitaciones/roles;
+- administración de usuarios, roles y estado desde `/api/v1/admin/users`;
+- bloqueo para que un administrador no pueda quitarse su propio rol ni desactivarse.
+
 ## Pendiente antes de producción
 
-- limitación de intentos de login y backoff;
-- recuperación/cambio de contraseña;
-- protección CSRF explícita para mutaciones si el frontend se sirve en otro origen;
-- limpieza programada de sesiones expiradas;
-- política de expiración y renovación de sesiones;
-- auditoría de login, logout, fallos y cambios de permisos;
-- revisión de protección de datos y consentimiento para menores.
+- configurar SMTP real y verificar entrega de mensajes;
+- política de expiración/renovación de sesiones y revisión de RPO/RTO;
+- revisión de protección de datos y consentimiento para menores;
+- definir si el rate limiter en memoria basta para una sola instancia o se requiere uno distribuido al escalar;
+- configurar HTTPS real, cabeceras de seguridad y backups fuera del servidor.

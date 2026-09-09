@@ -28,7 +28,7 @@ La API queda en `http://localhost:3000` y el frontend en `http://localhost:5173`
 ## Producción Linux
 
 ```bash
-git clone <URL_DEL_REPOSITORIO> /opt/club-basket
+git clone https://github.com/Mimo13/gestion-club-basket.git /opt/club-basket
 cd /opt/club-basket
 sudo bash scripts/install-linux.sh
 ```

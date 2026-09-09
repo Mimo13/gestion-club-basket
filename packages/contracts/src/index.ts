@@ -6,6 +6,9 @@ export const isoDateTimeSchema = z.string().datetime({ offset: true })
 export const roleSchema = z.enum(['club_admin', 'coordinator', 'coach', 'assistant', 'viewer'])
 export type Role = z.infer<typeof roleSchema>
 
+export const userStatusSchema = z.enum(['active', 'invited', 'disabled'])
+export type UserStatus = z.infer<typeof userStatusSchema>
+
 export const loginInputSchema = z.object({
   email: z.string().trim().email().transform((value) => value.toLowerCase()),
   password: z.string().min(1).max(200),
@@ -28,6 +31,43 @@ export const sessionResponseSchema = z.object({
   accessToken: z.string().min(1).optional(),
 })
 export type SessionResponse = z.infer<typeof sessionResponseSchema>
+
+export const forgotPasswordInputSchema = z.object({ email: z.string().trim().email().transform((value) => value.toLowerCase()) })
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordInputSchema>
+
+export const resetPasswordInputSchema = z.object({
+  token: z.string().min(20).max(200),
+  password: z.string().min(12).max(200),
+})
+export type ResetPasswordInput = z.infer<typeof resetPasswordInputSchema>
+
+export const changePasswordInputSchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+  newPassword: z.string().min(12).max(200),
+})
+export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>
+
+export const createManagedUserInputSchema = z.object({
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
+  displayName: z.string().trim().min(1).max(160),
+  role: roleSchema,
+})
+export type CreateManagedUserInput = z.infer<typeof createManagedUserInputSchema>
+
+export const managedUserSchema = z.object({
+  id: uuidSchema,
+  email: z.string().email(),
+  displayName: z.string().min(1),
+  status: userStatusSchema,
+  role: roleSchema,
+  clubId: uuidSchema,
+  createdAt: isoDateTimeSchema,
+})
+export type ManagedUser = z.infer<typeof managedUserSchema>
+
+export const updateUserRoleInputSchema = z.object({ role: roleSchema })
+export const updateUserStatusInputSchema = z.object({ status: userStatusSchema })
+export const managedUsersResponseSchema = z.object({ items: z.array(managedUserSchema) })
 
 export const healthResponseSchema = z.object({
   status: z.literal('ok'),

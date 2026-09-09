@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import type { Role } from '@club-basket/contracts'
 import { findUserBySessionToken } from './auth-repository.js'
 import type { AuthenticatedUser } from './auth-repository.js'
 
@@ -20,6 +21,20 @@ export async function requireAuthenticatedUser(
   const user = await getAuthenticatedUser(request)
   if (!user) {
     await reply.code(401).send({ error: { code: 'UNAUTHENTICATED', message: 'Es necesario iniciar sesión' } })
+    return undefined
+  }
+  return user
+}
+
+export async function requireRole(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  roles: readonly Role[],
+): Promise<AuthenticatedUser | undefined> {
+  const user = await requireAuthenticatedUser(request, reply)
+  if (!user) return undefined
+  if (!roles.includes(user.role)) {
+    await reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'No tienes permiso para esta operación' } })
     return undefined
   }
   return user

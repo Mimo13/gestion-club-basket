@@ -24,9 +24,13 @@ Antes de exponer el servidor:
 
 1. Editar `/etc/club-basket/app.env`.
 2. Sustituir contraseña y `SESSION_SECRET`.
-3. Configurar `server_name` y HTTPS en Nginx.
-4. Crear el primer administrador con el comando documentado abajo.
-5. Ejecutar una copia de seguridad y probar `/api/v1/health`.
+3. Configurar `SMTP_HOST`, `SMTP_FROM` y credenciales SMTP para recuperación e invitaciones.
+4. Revisar `PASSWORD_RESET_URL` para que apunte al dominio público.
+5. Configurar `server_name` y HTTPS en Nginx.
+6. Activar HTTPS y usar el dominio real antes de iniciar sesión.
+7. Crear el primer administrador con el comando documentado abajo.
+8. Ejecutar una copia de seguridad y probar `/api/v1/health`.
+9. Verificar el timer `club-basket-identity-cleanup.timer`.
 
 ### Primer administrador
 

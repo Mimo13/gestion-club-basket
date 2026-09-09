@@ -1,13 +1,16 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider.js'
+import { ChangePasswordPage } from '../features/auth/ChangePasswordPage.js'
 import { LoginPage } from '../features/auth/LoginPage.js'
+import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.js'
+import { UsersPage } from '../features/admin/UsersPage.js'
 import { TeamsPage } from '../features/teams/TeamsPage.js'
 
 const navItems = [
   { to: '/', label: 'Inicio', icon: '⌂' },
   { to: '/teams', label: 'Equipos', icon: '●' },
   { to: '/calendar', label: 'Agenda', icon: '◷' },
-  { to: '/more', label: 'Más', icon: '•••' },
+  { to: '/account/password', label: 'Cuenta', icon: '◉' },
 ]
 
 function HomePage() {
@@ -27,9 +30,10 @@ function HomePage() {
 export function App() {
   const { user, isLoading, logout } = useAuth()
 
-  if (isLoading) {
+  if (isLoading && window.location.pathname !== '/reset-password') {
     return <main className="auth-page"><p className="status-message">Comprobando sesión…</p></main>
   }
+  if (!user && window.location.pathname === '/reset-password') return <ResetPasswordPage />
   if (!user) return <LoginPage />
 
   return (
@@ -39,13 +43,19 @@ export function App() {
           <p className="brand-kicker">CLUB BASKET</p>
           <strong>Gestión deportiva</strong>
         </div>
-        <button className="avatar-button" aria-label="Cerrar sesión" onClick={() => void logout()}>{user.displayName.slice(0, 2).toUpperCase()}</button>
+        <div className="profile-actions">
+          {user.role === 'club_admin' && <NavLink className="admin-link" to="/admin/users">Usuarios</NavLink>}
+          <NavLink className="avatar-button" aria-label="Abrir cuenta" to="/account/password">{user.displayName.slice(0, 2).toUpperCase()}</NavLink>
+          <button className="logout-button" aria-label="Cerrar sesión" onClick={() => void logout()}>Salir</button>
+        </div>
       </header>
 
       <main className="main-content">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/account/password" element={<ChangePasswordPage />} />
+          <Route path="/admin/users" element={<UsersPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </main>

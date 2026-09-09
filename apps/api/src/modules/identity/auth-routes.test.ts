@@ -50,7 +50,9 @@ describe('identity routes', () => {
     expect(login.statusCode).toBe(200)
     const cookie = login.headers['set-cookie']
     expect(cookie).toBeTruthy()
-    const cookieHeader = Array.isArray(cookie) ? cookie[0] : cookie
+    const cookieValues = Array.isArray(cookie) ? cookie : [cookie]
+    const cookieHeader = cookieValues.filter((value): value is string => Boolean(value)).map((value) => value.split(';')[0]).join('; ')
+    const csrfCookie = cookieHeader.match(/(?:^|; )club_basket_csrf=([^;]+)/)?.[1]
 
     const session = await app.inject({
       method: 'GET',
@@ -66,7 +68,7 @@ describe('identity routes', () => {
     const logout = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/logout',
-      headers: { cookie: cookieHeader },
+      headers: { cookie: cookieHeader, 'x-csrf-token': csrfCookie },
     })
     expect(logout.statusCode).toBe(204)
 

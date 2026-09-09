@@ -3,8 +3,12 @@ import {
   healthResponseSchema,
   listTeamsQuerySchema,
   paginatedTeamsSchema,
+  managedUsersResponseSchema,
   sessionResponseSchema,
+  type CreateManagedUserInput,
   type CreateTeamInput,
+  type Role,
+  type UserStatus,
   type ListTeamsQuery,
   type PaginatedTeams,
 } from '@club-basket/contracts'
@@ -21,11 +25,20 @@ export class ApiClientError extends Error {
 }
 
 export function createApiClient(baseUrl: string) {
+  const csrfToken = (): string | undefined => {
+    if (typeof document === 'undefined') return undefined
+    return document.cookie.split('; ').find((part) => part.startsWith('club_basket_csrf='))?.split('=')[1]
+  }
+
   const request = async (path: string, init?: RequestInit): Promise<unknown> => {
+    const headers = new Headers(init?.headers)
+    headers.set('Content-Type', 'application/json')
+    const token = csrfToken()
+    if (token) headers.set('x-csrf-token', decodeURIComponent(token))
     const response = await fetch(`${baseUrl.replace(/\/$/, '')}${path}`, {
       ...init,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers,
     })
 
     const body: unknown = await response.json().catch(() => undefined)
@@ -55,6 +68,27 @@ export function createApiClient(baseUrl: string) {
     },
     async logout() {
       await request('/api/v1/auth/logout', { method: 'POST' })
+    },
+    async requestPasswordReset(email: string) {
+      await request('/api/v1/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) })
+    },
+    async changePassword(currentPassword: string, newPassword: string) {
+      await request('/api/v1/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) })
+    },
+    async resetPassword(token: string, password: string) {
+      await request('/api/v1/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) })
+    },
+    async listUsers() {
+      return managedUsersResponseSchema.parse(await request('/api/v1/admin/users'))
+    },
+    async inviteUser(input: CreateManagedUserInput) {
+      return await request('/api/v1/admin/users', { method: 'POST', body: JSON.stringify(input) })
+    },
+    async updateUserRole(userId: string, role: Role) {
+      await request(`/api/v1/admin/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) })
+    },
+    async updateUserStatus(userId: string, status: UserStatus) {
+      await request(`/api/v1/admin/users/${userId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
     },
     async listTeams(query: Partial<ListTeamsQuery> = {}): Promise<PaginatedTeams> {
       const parsedQuery = listTeamsQuerySchema.parse(query)

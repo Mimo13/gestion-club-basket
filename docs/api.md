@@ -32,7 +32,22 @@ Devuelve el usuario asociado a la cookie o al header `Authorization: Bearer <tok
 
 ### `POST /api/v1/auth/logout`
 
-Revoca la sesión actual y elimina la cookie. Responde `204`.
+Revoca la sesión actual y elimina la cookie. Requiere `x-csrf-token` cuando se autentica mediante cookie. Responde `204`.
+
+### Recuperación y cambio de contraseña
+
+- `POST /api/v1/auth/forgot-password`: solicita un enlace sin revelar si el email existe.
+- `POST /api/v1/auth/reset-password`: consume un token de un solo uso.
+- `POST /api/v1/auth/change-password`: cambia la contraseña autenticada y mantiene sólo la sesión actual.
+
+### Administración
+
+- `GET /api/v1/admin/users`: lista usuarios del club; requiere `club_admin`.
+- `POST /api/v1/admin/users`: invita usuario; requiere `club_admin` y CSRF.
+- `PATCH /api/v1/admin/users/:userId/role`: cambia rol.
+- `PATCH /api/v1/admin/users/:userId/status`: activa/desactiva usuario.
+
+Las mutaciones web de administración requieren `x-csrf-token`. La API móvil puede usar `Authorization: Bearer` y no depende de cookie CSRF.
 
 ## Endpoints implementados en el esqueleto
 

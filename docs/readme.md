@@ -70,3 +70,4 @@ Documentación recomendada para las siguientes fases:
 - `docs/backups.md` — copias y restauración del PostgreSQL y almacenamiento local.
 - `docs/api.md` — contratos REST/OpenAPI.
 - `docs/ux-mobile.md` — flujos mobile-first y accesibilidad táctil.
+- `docs/seguridad.md` — identidad, sesiones, permisos y recuperación de contraseña.

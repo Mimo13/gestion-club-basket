@@ -17,6 +17,11 @@ backups/
 *.dump.gz
 *.sql.gz
 
+# Datos de trabajo importados y documentos sensibles
+/docs/*.csv
+/docs/*.xlsx
+/docs/*.pdf
+
 # IDE
 .idea/
 .vscode/*
