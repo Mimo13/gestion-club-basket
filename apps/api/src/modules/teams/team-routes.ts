@@ -27,7 +27,11 @@ export async function teamRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'No tienes permiso para crear equipos' } })
     }
 
-    const input = createTeamInputSchema.safeParse(request.body)
+    const rawBody = request.body as Record<string, unknown>
+    const input = createTeamInputSchema.safeParse({
+      ...rawBody,
+      category: typeof rawBody.category === 'string' ? rawBody.category : undefined,
+    })
     if (!input.success) {
       return reply.code(400).send({
         error: { code: 'VALIDATION_ERROR', message: 'Los datos del equipo no son válidos', details: input.error.flatten() },

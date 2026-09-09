@@ -4,6 +4,7 @@ import { ChangePasswordPage } from '../features/auth/ChangePasswordPage.js'
 import { LoginPage } from '../features/auth/LoginPage.js'
 import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.js'
 import { UsersPage } from '../features/admin/UsersPage.js'
+import { CategoriesPage } from '../features/settings/CategoriesPage.js'
 import { TeamsPage } from '../features/teams/TeamsPage.js'
 
 const navItems = [
@@ -44,6 +45,7 @@ export function App() {
           <strong>Gestión deportiva</strong>
         </div>
         <div className="profile-actions">
+          {(user.role === 'club_admin' || user.role === 'coordinator') && <NavLink className="admin-link" to="/settings/categories">Ajustes</NavLink>}
           {user.role === 'club_admin' && <NavLink className="admin-link" to="/admin/users">Usuarios</NavLink>}
           <NavLink className="avatar-button" aria-label="Abrir cuenta" to="/account/password">{user.displayName.slice(0, 2).toUpperCase()}</NavLink>
           <button className="logout-button" aria-label="Cerrar sesión" onClick={() => void logout()}>Salir</button>
@@ -56,6 +58,7 @@ export function App() {
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/account/password" element={<ChangePasswordPage />} />
           <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/settings/categories" element={<CategoriesPage />} />
           <Route path="*" element={<HomePage />} />
         </Routes>
       </main>

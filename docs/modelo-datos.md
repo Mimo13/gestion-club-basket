@@ -6,11 +6,14 @@ La migración `apps/api/src/database/migrations/001_initial_schema.sql` crea el 
 
 ```text
 clubs ──< club_memberships >── users
-  └──< seasons ──< teams
+  └──< seasons ──< teams ──> categories
+  └──< categories
 ```
 
 - Un club tiene temporadas.
 - Una temporada tiene equipos.
+- Cada club mantiene su propio catálogo de categorías, que puede activarse o desactivarse desde Settings.
+- Un equipo puede referenciar una categoría del mismo club; se conserva el texto de categoría para compatibilidad con el MVP.
 - Un usuario puede tener una relación con uno o varios clubes, con un rol por club.
 - La temporada actual se limita a una por club mediante índice parcial.
 
@@ -41,6 +44,12 @@ Una actividad puede ser entrenamiento o partido. La tabla `matches` extiende una
 - Borrado en cascada sólo en datos dependientes; equipos y temporadas usan restricciones para evitar perder histórico accidentalmente.
 - Índices iniciales cubren club/temporada, equipo/fecha, jugador/asistencia y auditoría.
 - Toda migración se ejecuta dentro de una transacción y se registra en `schema_migrations`.
+
+## Categorías
+
+La tabla `categories` contiene el catálogo configurable por club. Incluye nombre, rango orientativo de edad, rango de año de nacimiento, texto de presentación, orden y estado (`active`/`inactive`). La migración inicial de categorías carga los valores de `docs/categorias.md` para el club base.
+
+Los roles `club_admin` y `coordinator` pueden consultar y modificar el catálogo desde `/settings/categories`. Las categorías inactivas no aparecen en los selectores operativos, pero se conservan para no romper el histórico.
 
 ## Primeras ampliaciones previstas
 

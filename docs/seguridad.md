@@ -46,6 +46,7 @@ La API debe comprobar el rol y el club en cada caso de uso. La UI sólo refleja 
 - limpieza de sesiones y tokens mediante servicio/timer systemd;
 - auditoría de login correcto, fallido, logout, cambio de contraseña e invitaciones/roles;
 - administración de usuarios, roles y estado desde `/api/v1/admin/users`;
+- catálogo de categorías aislado por club y editable por `club_admin`/`coordinator` desde Settings;
 - bloqueo para que un administrador no pueda quitarse su propio rol ni desactivarse.
 
 ## Pendiente antes de producción

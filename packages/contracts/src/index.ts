@@ -76,6 +76,40 @@ export const healthResponseSchema = z.object({
 })
 export type HealthResponse = z.infer<typeof healthResponseSchema>
 
+export const categoryStatusSchema = z.enum(['active', 'inactive'])
+export type CategoryStatus = z.infer<typeof categoryStatusSchema>
+
+export const categorySchema = z.object({
+  id: uuidSchema,
+  clubId: uuidSchema,
+  name: z.string().min(1).max(80),
+  ageMin: z.number().int().nonnegative().nullable(),
+  ageMax: z.number().int().nonnegative().nullable(),
+  birthYearFrom: z.number().int().min(1900).max(2200).nullable(),
+  birthYearTo: z.number().int().min(1900).max(2200).nullable(),
+  birthYearLabel: z.string().max(80).nullable(),
+  sortOrder: z.number().int().nonnegative(),
+  status: categoryStatusSchema,
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
+})
+export type Category = z.infer<typeof categorySchema>
+
+export const createCategoryInputSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  ageMin: z.number().int().nonnegative().nullable().optional(),
+  ageMax: z.number().int().nonnegative().nullable().optional(),
+  birthYearFrom: z.number().int().min(1900).max(2200).nullable().optional(),
+  birthYearTo: z.number().int().min(1900).max(2200).nullable().optional(),
+  birthYearLabel: z.string().trim().max(80).nullable().optional(),
+  sortOrder: z.number().int().nonnegative().default(100),
+})
+export type CreateCategoryInput = z.infer<typeof createCategoryInputSchema>
+
+export const updateCategoryInputSchema = createCategoryInputSchema.partial().extend({ status: categoryStatusSchema.optional() })
+export type UpdateCategoryInput = z.infer<typeof updateCategoryInputSchema>
+export const categoriesResponseSchema = z.object({ items: z.array(categorySchema) })
+
 export const teamStatusSchema = z.enum(['active', 'inactive', 'archived'])
 export type TeamStatus = z.infer<typeof teamStatusSchema>
 

@@ -7,6 +7,7 @@ interface TeamRow {
   season_id: string
   name: string
   category: string
+  category_id: string | null
   gender: Team['gender']
   status: Team['status']
   created_at: Date
@@ -46,7 +47,7 @@ export async function listTeams(clubId: string, query: ListTeamsQuery): Promise<
 
   values.push(String(query.limit), String(query.offset))
   const result = await db.query<TeamRow>(
-    `SELECT id, club_id, season_id, name, category, gender, status, created_at, updated_at
+    `SELECT id, club_id, season_id, name, category, category_id, gender, status, created_at, updated_at
      FROM teams ${where} ORDER BY category, name LIMIT $${values.length - 1} OFFSET $${values.length}`,
     values,
   )
@@ -61,10 +62,12 @@ export async function listTeams(clubId: string, query: ListTeamsQuery): Promise<
 
 export async function createTeam(clubId: string, input: CreateTeamInput): Promise<Team> {
   const result = await db.query<TeamRow>(
-    `INSERT INTO teams (club_id, season_id, name, category, gender)
-     SELECT $1, $2, $3, $4, $5
-     WHERE EXISTS (SELECT 1 FROM seasons WHERE id = $2 AND club_id = $1)
-     RETURNING id, club_id, season_id, name, category, gender, status, created_at, updated_at`,
+    `INSERT INTO teams (club_id, season_id, name, category, category_id, gender)
+     SELECT $1, $2, $3, c.name, c.id, $5
+     FROM categories c
+     WHERE lower(c.name) = lower(trim($4)) AND c.club_id = $1 AND c.status = 'active'
+       AND EXISTS (SELECT 1 FROM seasons WHERE id = $2 AND club_id = $1)
+     RETURNING id, club_id, season_id, name, category, category_id, gender, status, created_at, updated_at`,
     [clubId, input.seasonId, input.name, input.category, input.gender],
   )
 

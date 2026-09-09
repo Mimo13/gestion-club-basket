@@ -99,6 +99,15 @@ Respuesta `200`:
 }
 ```
 
+### Categorías y Settings
+
+- `GET /api/v1/categories`: lista las categorías activas del club autenticado para selectores operativos.
+- `GET /api/v1/settings/categories`: lista todas las categorías del club; requiere `club_admin` o `coordinator`.
+- `POST /api/v1/settings/categories`: crea una categoría; requiere rol de gestión y CSRF en sesión web.
+- `PATCH /api/v1/settings/categories/:categoryId`: modifica sus datos o estado; requiere rol de gestión y CSRF en sesión web.
+
+Las categorías pertenecen siempre al club de la sesión. Desactivar una categoría no la elimina ni modifica los equipos históricos.
+
 ### `POST /api/v1/teams`
 
 Requiere autenticación y rol `club_admin` o `coordinator`.

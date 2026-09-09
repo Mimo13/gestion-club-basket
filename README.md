@@ -52,5 +52,6 @@ No se utiliza Docker. La API se ejecuta como servicio `systemd`, el frontend se 
 - [Modelo de datos](docs/modelo-datos.md)
 - [API](docs/api.md)
 - [Seguridad e identidad](docs/seguridad.md)
+- Categorías iniciales y configuración: `docs/categorias.md` y Settings > Categorías
 - [Instalación portable](docs/instalacion-portable.md)
 - [Roadmap](roadmap.md)

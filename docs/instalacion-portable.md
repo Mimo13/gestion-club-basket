@@ -31,6 +31,7 @@ Antes de exponer el servidor:
 7. Crear el primer administrador con el comando documentado abajo.
 8. Ejecutar una copia de seguridad y probar `/api/v1/health`.
 9. Verificar el timer `club-basket-identity-cleanup.timer`.
+10. Las categorías iniciales se cargan automáticamente desde la migración `006_categories`; su mantenimiento se realiza desde Settings.
 
 ### Primer administrador
 
