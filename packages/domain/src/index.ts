@@ -10,6 +10,10 @@ export function canRegisterAttendance(role: Role): boolean {
   return canManageTeam(role) || role === 'coach' || role === 'assistant'
 }
 
+export function canManageActivity(role: Role): boolean {
+  return canManageTeam(role) || role === 'coach'
+}
+
 export function attendanceCountsAsPresent(status: AttendanceStatus): boolean {
   return status === 'present' || status === 'late'
 }

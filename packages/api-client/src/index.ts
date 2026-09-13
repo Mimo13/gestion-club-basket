@@ -8,18 +8,24 @@ import {
   currentSeasonSchema,
   listTeamsQuerySchema,
   paginatedTeamsSchema,
+  listActivitiesQuerySchema,
+  paginatedActivitiesSchema,
   managedUsersResponseSchema,
   sessionResponseSchema,
   type CreateCategoryInput,
+  type CreateActivityInput,
   type MarkAbsenceResponse,
   type AttendanceSummary,
   type CreateManagedUserInput,
   type CreateTeamInput,
   type Role,
   type UpdateCategoryInput,
+  type UpdateActivityInput,
   type UserStatus,
   type ListTeamsQuery,
   type PaginatedTeams,
+  type ListActivitiesQuery,
+  type PaginatedActivities,
 } from '@club-basket/contracts'
 
 export class ApiClientError extends Error {
@@ -137,6 +143,20 @@ export function createApiClient(baseUrl: string) {
     },
     async updateConvocation(teamId: string, matchId: string, playerId: string, calledUp: boolean) {
       await request(`/api/v1/teams/${teamId}/matches/${matchId}/convocations/${playerId}`, { method: 'PATCH', body: JSON.stringify({ calledUp }) })
+    },
+    async createActivity(input: CreateActivityInput) {
+      return (await request('/api/v1/activities', { method: 'POST', body: JSON.stringify(input) })) as PaginatedActivities['items'][number]
+    },
+    async updateActivity(activityId: string, input: UpdateActivityInput) {
+      return (await request(`/api/v1/activities/${activityId}`, { method: 'PATCH', body: JSON.stringify(input) })) as PaginatedActivities['items'][number]
+    },
+    async listActivities(query: Partial<ListActivitiesQuery> = {}): Promise<PaginatedActivities> {
+      const parsedQuery = listActivitiesQuerySchema.parse(query)
+      const params = new URLSearchParams()
+      for (const [key, value] of Object.entries(parsedQuery)) {
+        if (value !== undefined) params.set(key, String(value))
+      }
+      return paginatedActivitiesSchema.parse(await request(`/api/v1/activities?${params}`))
     },
     async listTeams(query: Partial<ListTeamsQuery> = {}): Promise<PaginatedTeams> {
       const parsedQuery = listTeamsQuerySchema.parse(query)

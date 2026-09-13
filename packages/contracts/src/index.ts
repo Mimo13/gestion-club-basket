@@ -164,6 +164,76 @@ export const paginatedTeamsSchema = z.object({
 })
 export type PaginatedTeams = z.infer<typeof paginatedTeamsSchema>
 
+export const activityTypeSchema = z.enum(['training', 'match'])
+export type ActivityType = z.infer<typeof activityTypeSchema>
+
+export const activityStatusSchema = z.enum(['scheduled', 'completed', 'cancelled'])
+export type ActivityStatus = z.infer<typeof activityStatusSchema>
+
+export const activitySchema = z.object({
+  id: uuidSchema,
+  teamId: uuidSchema,
+  teamName: z.string().min(1),
+  type: activityTypeSchema,
+  startsAt: isoDateTimeSchema,
+  endsAt: isoDateTimeSchema.nullable(),
+  status: activityStatusSchema,
+  venueName: z.string().nullable(),
+  notes: z.string().nullable(),
+  opponentName: z.string().nullable(),
+  isHome: z.boolean().nullable(),
+  competition: z.string().nullable(),
+  matchStatus: z.enum(['scheduled', 'completed', 'postponed', 'cancelled']).nullable(),
+})
+export type Activity = z.infer<typeof activitySchema>
+
+export const listActivitiesQuerySchema = z.object({
+  teamId: uuidSchema.optional(),
+  fromDate: dateSchema.optional(),
+  toDate: dateSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+}).refine((value) => !value.fromDate || !value.toDate || value.toDate >= value.fromDate, {
+  message: 'toDate no puede ser anterior a fromDate',
+  path: ['toDate'],
+})
+export type ListActivitiesQuery = z.infer<typeof listActivitiesQuerySchema>
+
+export const paginatedActivitiesSchema = z.object({
+  items: z.array(activitySchema),
+  total: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+})
+export type PaginatedActivities = z.infer<typeof paginatedActivitiesSchema>
+
+const activityWriteBaseSchema = z.object({
+  teamId: uuidSchema,
+  startsAt: isoDateTimeSchema,
+  endsAt: isoDateTimeSchema.nullable().optional(),
+  venueName: z.string().trim().max(160).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
+})
+
+export const createTrainingInputSchema = activityWriteBaseSchema.extend({ type: z.literal('training') })
+export type CreateTrainingInput = z.infer<typeof createTrainingInputSchema>
+
+export const createMatchInputSchema = activityWriteBaseSchema.extend({
+  type: z.literal('match'),
+  opponentName: z.string().trim().min(1).max(160),
+  isHome: z.boolean(),
+  competition: z.string().trim().max(160).nullable().optional(),
+})
+export type CreateMatchInput = z.infer<typeof createMatchInputSchema>
+
+export const createActivityInputSchema = z.discriminatedUnion('type', [createTrainingInputSchema, createMatchInputSchema])
+export type CreateActivityInput = z.infer<typeof createActivityInputSchema>
+
+export const updateTrainingInputSchema = createTrainingInputSchema.extend({ status: activityStatusSchema.optional() })
+export const updateMatchInputSchema = createMatchInputSchema.extend({ status: activityStatusSchema.optional() })
+export const updateActivityInputSchema = z.discriminatedUnion('type', [updateTrainingInputSchema, updateMatchInputSchema])
+export type UpdateActivityInput = z.infer<typeof updateActivityInputSchema>
+
 export const playerSchema = z.object({
   id: uuidSchema,
   personId: uuidSchema,

@@ -1,8 +1,26 @@
 # Roadmap preliminar: gestión de equipos de baloncesto
 
-> **Estado:** propuesta de trabajo · **Versión:** 0.2 · **Horizonte orientativo:** 5-6 meses para una v1 usable, sujeto a validación con el club.
->
-> La propuesta anterior basada en Cloudflare Workers/KV y Docker queda reemplazada. El producto se desarrollará para el servidor Linux actual mediante instalación nativa, con PostgreSQL como base de datos portable, almacenamiento local Linux y un frontend React independiente del backend. macOS se utilizará para desarrollo local.
+> **Estado:** en ejecución incremental · **Versión:** 0.3 · **Horizonte orientativo:** 5-6 meses para una v1 usable, sujeto a validación con el club.
+
+## Seguimiento de implementación
+
+- **Implementado en el código actual:** autenticación web, recuperación y cambio de contraseña, administración básica de usuarios, categorías configurables, equipos, plantilla/asistencia y contratos compartidos iniciales.
+- **Completado en el paso anterior:** la pantalla de Asistencia ya permite seleccionar cualquier equipo activo y carga jugadores, partidos, faltas y convocatorias según el equipo seleccionado; se eliminó la dependencia del equipo Cadete fijo.
+- **Completado en este paso:** contratos compartidos, endpoint autenticado `GET /api/v1/activities`, cliente API y pantalla `/calendar` con filtro por equipo e intervalo de fechas; la agenda muestra entrenamientos y partidos con estado, rival, sede, competición y notas.
+- **Verificación:** `pnpm -r typecheck`, tests de contratos (3), tests de API (7) y `pnpm --filter @club-basket/web build` pasan correctamente. El build mantiene únicamente el aviso existente de bundle superior a 500 kB.
+- **Completado en este paso:** creación y edición de entrenamientos y partidos desde `/calendar`, cancelación segura, permisos para administración/coordinación/cuerpo técnico, validación compartida y auditoría de cambios.
+- **Pendiente conocido:** `apps/web` todavía no tiene pruebas de componentes; quedan por cubrir filtros avanzados por temporada, vistas día/semana/mes y pruebas E2E móviles.
+
+### Continuación recomendada
+
+1. Añadir pruebas de componentes web para selector de equipo, agenda, estados de carga/error/vacío y registro reversible de asistencia.
+2. Completar filtros de agenda por temporada y vistas día/semana/mes adaptadas a móvil.
+3. Implementar gestión de personas y jugadores para eliminar los datos de plantilla de prueba y permitir altas/bajas desde la aplicación.
+
+Para continuar: revisar primero `apps/web/src/features/calendar/CalendarPage.tsx` y `packages/contracts/src/index.ts`; el siguiente incremento debe añadir pruebas de componentes y mejorar las vistas de agenda sin introducir todavía estadísticas avanzadas.
+
+
+La propuesta anterior basada en Cloudflare Workers/KV y Docker queda reemplazada. El producto se desarrollará para el servidor Linux actual mediante instalación nativa, con PostgreSQL como base de datos portable, almacenamiento local Linux y un frontend React independiente del backend. macOS se utilizará para desarrollo local.
 
 ## 1. Principios del roadmap
 
@@ -100,17 +118,17 @@ No se debe empezar por un dashboard complejo sin validar primero el trabajo del 
 
 ### Entrenamientos
 
-- [ ] Crear y editar entrenamientos.
-- [ ] Mostrar la actividad próxima por equipo.
+- [x] Crear y editar entrenamientos.
+- [x] Mostrar la actividad próxima por equipo.
 - [ ] Marcar asistencia, retraso, ausencia justificada y observaciones.
 - [ ] Permitir corregir una marca y dejar trazabilidad cuando sea necesario.
 
 ### Partidos
 
-- [ ] Crear calendario de partidos y rival.
-- [ ] Vista por día/semana/mes adaptada a móvil.
+- [x] Crear calendario de partidos y rival.
+- [x] Vista inicial de agenda por intervalo y equipo adaptada a móvil.
 - [ ] Filtrar por equipo y temporada.
-- [ ] Estados de partido: planificado, jugado, suspendido y cancelado.
+- [x] Estados de partido: planificado, jugado, suspendido y cancelado.
 
 ### UX y pruebas
 

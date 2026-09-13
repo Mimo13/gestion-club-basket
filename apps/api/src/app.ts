@@ -8,6 +8,7 @@ import { authRoutes } from './modules/identity/auth-routes.js'
 import { categoryRoutes } from './modules/categories/category-routes.js'
 import { attendanceRoutes } from './modules/attendance/attendance-routes.js'
 import { teamRoutes } from './modules/teams/team-routes.js'
+import { activityRoutes } from './modules/activities/activity-routes.js'
 
 export function buildApp() {
   const app = Fastify({ logger: env.NODE_ENV !== 'test', trustProxy: env.NODE_ENV === 'production' })
@@ -35,6 +36,7 @@ export function buildApp() {
   void app.register(categoryRoutes)
   void app.register(attendanceRoutes)
   void app.register(teamRoutes)
+  void app.register(activityRoutes)
 
   app.setErrorHandler((error, _request, reply) => {
     app.log.error(error)

@@ -6,6 +6,7 @@ import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.js'
 import { UsersPage } from '../features/admin/UsersPage.js'
 import { CategoriesPage } from '../features/settings/CategoriesPage.js'
 import { AttendancePage } from '../features/attendance/AttendancePage.js'
+import { CalendarPage } from '../features/calendar/CalendarPage.js'
 import { TeamsPage } from '../features/teams/TeamsPage.js'
 
 const navItems = [
@@ -59,6 +60,7 @@ export function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/account/password" element={<ChangePasswordPage />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/settings/categories" element={<CategoriesPage />} />
