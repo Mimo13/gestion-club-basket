@@ -1,4 +1,4 @@
-import type { Absence, AttendanceSummary, CurrentSeason, MarkAbsenceResponse, Player, TrainingSession } from '@club-basket/contracts'
+import type { Absence, AttendanceSummary, CreatePlayerInput, CurrentSeason, MarkAbsenceResponse, Player, TrainingSession } from '@club-basket/contracts'
 import { db } from '../../database/client.js'
 
 interface PlayerRow {
@@ -22,17 +22,53 @@ function mapPlayer(row: PlayerRow): Player {
   return { id: row.id, personId: row.person_id, teamId: row.team_id, jerseyNumber: row.jersey_number, firstName: row.first_name, lastName: row.last_name, fullName: `${row.first_name} ${row.last_name}`, birthDate, birthYear, birthYearOrder: birthYear, status: row.status }
 }
 
+export async function listSeasons(clubId: string): Promise<CurrentSeason[]> {
+  const result = await db.query<{ id: string; name: string; starts_on: string | Date; ends_on: string | Date }>(`SELECT id, name, starts_on, ends_on FROM seasons WHERE club_id = $1 ORDER BY starts_on DESC`, [clubId])
+  return result.rows.map((row) => ({ id: row.id, name: row.name, startsOn: dateValue(row.starts_on), endsOn: dateValue(row.ends_on) }))
+}
+
 export async function findCurrentSeason(clubId: string): Promise<CurrentSeason | null> {
   const result = await db.query<{ id: string; name: string; starts_on: string; ends_on: string }>(`SELECT id, name, starts_on, ends_on FROM seasons WHERE club_id = $1 ORDER BY is_current DESC, starts_on DESC LIMIT 1`, [clubId])
   const row = result.rows[0]
   return row ? { id: row.id, name: row.name, startsOn: dateValue(row.starts_on), endsOn: dateValue(row.ends_on) } : null
 }
 
-export async function listTeamPlayers(clubId: string, teamId: string): Promise<Player[]> {
+export async function createPlayer(clubId: string, teamId: string, input: CreatePlayerInput): Promise<Player> {
+  const result = await db.query<PlayerRow>(
+    `WITH new_person AS (
+       INSERT INTO people (club_id, first_name, last_name, birth_date)
+       SELECT t.club_id, $3, $4, $5::date FROM teams t WHERE t.id = $2 AND t.club_id = $1
+       RETURNING id
+     ), new_player AS (
+       INSERT INTO players (person_id, current_team_id, jersey_number)
+       SELECT id, $2, $6 FROM new_person
+       RETURNING id, person_id, current_team_id AS team_id, jersey_number
+     )
+     SELECT p.id, p.person_id, p.team_id, p.jersey_number, pe.first_name, pe.last_name, pe.birth_date, pe.status
+     FROM new_player p JOIN people pe ON pe.id = p.person_id`,
+    [clubId, teamId, input.firstName, input.lastName, input.birthDate, input.jerseyNumber ?? null],
+  )
+  const row = result.rows[0]
+  if (!row) throw new Error('El equipo no existe en el club')
+  return mapPlayer(row)
+}
+
+export async function updatePlayerStatus(clubId: string, teamId: string, playerId: string, status: Player['status']): Promise<Player | null> {
+  const result = await db.query<PlayerRow>(
+    `UPDATE people pe SET status = $4, updated_at = now()
+     FROM players p JOIN teams t ON t.id = p.current_team_id
+     WHERE pe.id = p.person_id AND p.id = $3 AND t.id = $2 AND t.club_id = $1
+     RETURNING p.id, p.person_id, p.current_team_id AS team_id, p.jersey_number, pe.first_name, pe.last_name, pe.birth_date, pe.status`,
+    [clubId, teamId, playerId, status],
+  )
+  return result.rows[0] ? mapPlayer(result.rows[0]) : null
+}
+
+export async function listTeamPlayers(clubId: string, teamId: string, includeInactive = false): Promise<Player[]> {
   const result = await db.query<PlayerRow>(
     `SELECT p.id, p.person_id, p.current_team_id AS team_id, p.jersey_number, pe.first_name, pe.last_name, pe.birth_date, pe.status
      FROM players p JOIN people pe ON pe.id = p.person_id JOIN teams t ON t.id = p.current_team_id
-     WHERE t.id = $1 AND t.club_id = $2 AND pe.status = 'active'
+     WHERE t.id = $1 AND t.club_id = $2 ${includeInactive ? '' : "AND pe.status = 'active'"}
      ORDER BY EXTRACT(YEAR FROM pe.birth_date), p.jersey_number NULLS LAST, pe.last_name, pe.first_name`, [teamId, clubId],
   )
   return result.rows.map(mapPlayer)

@@ -2,10 +2,12 @@ import {
   apiErrorSchema,
   categoriesResponseSchema,
   categorySchema,
+  playerSchema,
   playersResponseSchema,
   attendanceSummarySchema,
   healthResponseSchema,
   currentSeasonSchema,
+  seasonsResponseSchema,
   listTeamsQuerySchema,
   paginatedTeamsSchema,
   listActivitiesQuerySchema,
@@ -13,6 +15,7 @@ import {
   managedUsersResponseSchema,
   sessionResponseSchema,
   type CreateCategoryInput,
+  type CreatePlayerInput,
   type CreateActivityInput,
   type MarkAbsenceResponse,
   type AttendanceSummary,
@@ -75,6 +78,9 @@ export function createApiClient(baseUrl: string) {
     async currentSeason() {
       return currentSeasonSchema.parse(await request('/api/v1/seasons/current'))
     },
+    async listSeasons() {
+      return seasonsResponseSchema.parse(await request('/api/v1/seasons'))
+    },
     async login(email: string, password: string) {
       return sessionResponseSchema.parse(await request('/api/v1/auth/login', {
         method: 'POST',
@@ -120,8 +126,15 @@ export function createApiClient(baseUrl: string) {
     async updateCategory(categoryId: string, input: UpdateCategoryInput) {
       return categorySchema.parse(await request(`/api/v1/settings/categories/${categoryId}`, { method: 'PATCH', body: JSON.stringify(input) }))
     },
-    async listPlayers(teamId: string) {
-      return playersResponseSchema.parse(await request(`/api/v1/teams/${teamId}/players`))
+    async listPlayers(teamId: string, includeInactive = false) {
+      const query = includeInactive ? '?includeInactive=true' : ''
+      return playersResponseSchema.parse(await request(`/api/v1/teams/${teamId}/players${query}`))
+    },
+    async createPlayer(teamId: string, input: CreatePlayerInput) {
+      return playerSchema.parse(await request(`/api/v1/teams/${teamId}/players`, { method: 'POST', body: JSON.stringify(input) }))
+    },
+    async updatePlayerStatus(teamId: string, playerId: string, status: 'active' | 'inactive' | 'archived') {
+      return playerSchema.parse(await request(`/api/v1/teams/${teamId}/players/${playerId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }))
     },
     async todayAbsences(teamId: string) {
       return (await request(`/api/v1/teams/${teamId}/attendance/today`)) as { trainingDate: string; absentPlayerIds: string[] }

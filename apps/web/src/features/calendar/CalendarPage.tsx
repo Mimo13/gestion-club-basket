@@ -42,14 +42,16 @@ export function CalendarPage() {
   const queryClient = useQueryClient()
   const today = dateInputValue(new Date())
   const [selectedTeamId, setSelectedTeamId] = useState<CalendarFilter>('all')
+  const [selectedSeasonId, setSelectedSeasonId] = useState('all')
   const [calendarView, setCalendarView] = useState<CalendarView>('week')
   const [anchorDate, setAnchorDate] = useState(today)
   const calendarRange = getCalendarRange(calendarView, anchorDate)
   const [form, setForm] = useState<ActivityForm | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const teamsQuery = useQuery({ queryKey: ['teams', 'calendar'], queryFn: () => api.listTeams({ status: 'active' }) })
-  const activitiesQuery = useQuery({ queryKey: ['activities', selectedTeamId, calendarView, calendarRange.fromDate, calendarRange.toDate], queryFn: () => api.listActivities({ teamId: selectedTeamId === 'all' ? undefined : selectedTeamId, fromDate: calendarRange.fromDate, toDate: calendarRange.toDate, limit: 100 }) })
+  const teamsQuery = useQuery({ queryKey: ['teams', 'calendar', selectedSeasonId], queryFn: () => api.listTeams({ status: 'active', seasonId: selectedSeasonId === 'all' ? undefined : selectedSeasonId }) })
+  const seasonsQuery = useQuery({ queryKey: ['seasons'], queryFn: () => api.listSeasons() })
+  const activitiesQuery = useQuery({ queryKey: ['activities', selectedTeamId, selectedSeasonId, calendarView, calendarRange.fromDate, calendarRange.toDate], queryFn: () => api.listActivities({ teamId: selectedTeamId === 'all' ? undefined : selectedTeamId, seasonId: selectedSeasonId === 'all' ? undefined : selectedSeasonId, fromDate: calendarRange.fromDate, toDate: calendarRange.toDate, limit: 100 }) })
   const activityGroups = groupActivitiesByDate(activitiesQuery.data?.items ?? [])
   const saveMutation = useMutation({
     mutationFn: (input: CreateActivityInput | UpdateActivityInput) => editingId ? api.updateActivity(editingId, input as UpdateActivityInput) : api.createActivity(input as CreateActivityInput),
@@ -76,7 +78,7 @@ export function CalendarPage() {
     <section className="page-content">
       <div className="page-heading"><div><p className="eyebrow">Planificación del club</p><h1>Agenda</h1></div>{canManage && <button className="primary-button" type="button" onClick={openCreate} disabled={!teamsQuery.data?.items.length}>Nueva actividad</button>}</div>
       <div className="settings-form calendar-filters">
-        <label>Equipo<select value={selectedTeamId} onChange={(event) => setSelectedTeamId(event.target.value)}><option value="all">Todos los equipos</option>{teamsQuery.data?.items.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
+        <div className="form-grid-2"><label>Temporada<select value={selectedSeasonId} onChange={(event) => { setSelectedSeasonId(event.target.value); setSelectedTeamId('all') }}><option value="all">Todas las temporadas</option>{seasonsQuery.data?.items.map((season) => <option key={season.id} value={season.id}>{season.name}</option>)}</select></label><label>Equipo<select value={selectedTeamId} onChange={(event) => setSelectedTeamId(event.target.value)}><option value="all">Todos los equipos</option>{teamsQuery.data?.items.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label></div>
         <div className="calendar-view-picker" aria-label="Vista de agenda">{(['day', 'week', 'month'] as const).map((view) => <button className={calendarView === view ? 'view-button active' : 'view-button'} type="button" key={view} onClick={() => setCalendarView(view)}>{view === 'day' ? 'Día' : view === 'week' ? 'Semana' : 'Mes'}</button>)}</div>
         <label>Fecha de referencia<input type="date" value={anchorDate} onChange={(event) => setAnchorDate(event.target.value)} /></label>
         <p className="helper-text">Mostrando del {displayDate(calendarRange.fromDate)} al {displayDate(calendarRange.toDate)}.</p>

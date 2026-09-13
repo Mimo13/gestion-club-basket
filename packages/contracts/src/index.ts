@@ -122,6 +122,7 @@ export const currentSeasonSchema = z.object({
   endsOn: dateSchema,
 })
 export type CurrentSeason = z.infer<typeof currentSeasonSchema>
+export const seasonsResponseSchema = z.object({ items: z.array(currentSeasonSchema) })
 
 export const teamStatusSchema = z.enum(['active', 'inactive', 'archived'])
 export type TeamStatus = z.infer<typeof teamStatusSchema>
@@ -189,6 +190,7 @@ export type Activity = z.infer<typeof activitySchema>
 
 export const listActivitiesQuerySchema = z.object({
   teamId: uuidSchema.optional(),
+  seasonId: uuidSchema.optional(),
   fromDate: dateSchema.optional(),
   toDate: dateSchema.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
@@ -249,6 +251,16 @@ export const playerSchema = z.object({
 })
 export type Player = z.infer<typeof playerSchema>
 export const playersResponseSchema = z.object({ items: z.array(playerSchema) })
+
+export const createPlayerInputSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(120),
+  birthDate: dateSchema,
+  jerseyNumber: z.number().int().min(0).max(99).nullable().optional(),
+})
+export type CreatePlayerInput = z.infer<typeof createPlayerInputSchema>
+export const updatePlayerStatusInputSchema = z.object({ status: z.enum(['active', 'inactive', 'archived']) })
+export const createPlayerResponseSchema = playerSchema
 
 export const trainingSessionSchema = z.object({
   id: uuidSchema,

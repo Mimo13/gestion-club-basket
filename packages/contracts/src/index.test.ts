@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createActivityInputSchema, createTeamInputSchema, listActivitiesQuerySchema, listTeamsQuerySchema } from './index.js'
+import { createActivityInputSchema, createPlayerInputSchema, createTeamInputSchema, listActivitiesQuerySchema, listTeamsQuerySchema } from './index.js'
 
 describe('contracts', () => {
   it('applies defaults to team creation', () => {
@@ -28,6 +28,11 @@ describe('contracts', () => {
     expect(training.success).toBe(true)
     expect(match.success).toBe(true)
     expect(invalidMatch.success).toBe(false)
+  })
+
+  it('validates player creation fields', () => {
+    expect(createPlayerInputSchema.safeParse({ firstName: 'Ana', lastName: 'Pérez', birthDate: '2012-04-03' }).success).toBe(true)
+    expect(createPlayerInputSchema.safeParse({ firstName: '', lastName: 'Pérez', birthDate: '2012-04-03' }).success).toBe(false)
   })
 
   it('validates an activity date interval and applies pagination defaults', () => {

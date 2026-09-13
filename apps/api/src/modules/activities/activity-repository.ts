@@ -150,6 +150,10 @@ export async function listActivities(clubId: string, query: ListActivitiesQuery)
     values.push(query.teamId)
     conditions.push(`a.team_id = $${values.length}`)
   }
+  if (query.seasonId) {
+    values.push(query.seasonId)
+    conditions.push(`t.season_id = $${values.length}`)
+  }
   if (query.fromDate) {
     values.push(query.fromDate)
     conditions.push(`a.starts_at >= $${values.length}::date`)

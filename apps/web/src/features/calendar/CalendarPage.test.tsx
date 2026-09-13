@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropsWithChildren } from 'react'
 import { CalendarPage } from './CalendarPage.js'
 
-const mocks = vi.hoisted(() => ({ listTeams: vi.fn(), listActivities: vi.fn(), createActivity: vi.fn(), updateActivity: vi.fn() }))
+const mocks = vi.hoisted(() => ({ listTeams: vi.fn(), listSeasons: vi.fn(), listActivities: vi.fn(), createActivity: vi.fn(), updateActivity: vi.fn() }))
 
 vi.mock('@club-basket/api-client', () => ({
   ApiClientError: class ApiClientError extends Error {},
@@ -28,6 +28,7 @@ describe('CalendarPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.listTeams.mockResolvedValue({ items: [{ id: 'team-1', name: 'Cadete', category: 'Cadete' }], total: 1, limit: 50, offset: 0 })
+    mocks.listSeasons.mockResolvedValue({ items: [] })
     mocks.listActivities.mockResolvedValue({ items: [], total: 0, limit: 100, offset: 0 })
   })
 
@@ -44,7 +45,7 @@ describe('CalendarPage', () => {
   it('filters the agenda by team', async () => {
     renderPage()
     await screen.findByRole('option', { name: 'Cadete' })
-    const teamSelect = (await screen.findAllByRole('combobox'))[0]
+    const teamSelect = (await screen.findAllByRole('combobox'))[1]
     if (!teamSelect) throw new Error('No se encontró el filtro de equipo')
     const user = (userEvent as unknown as { setup: () => { selectOptions: (element: HTMLElement, value: string) => Promise<void> } }).setup()
 

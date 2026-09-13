@@ -1,16 +1,22 @@
 import type { FastifyInstance } from 'fastify'
-import { dateSchema } from '@club-basket/contracts'
+import { createPlayerInputSchema, dateSchema, updatePlayerStatusInputSchema } from '@club-basket/contracts'
 import { canRegisterAttendance } from '@club-basket/domain'
 import { recordAuditEvent } from '../../shared/audit.js'
 import { requireAuthenticatedUser, requireRole } from '../identity/auth-context.js'
 import { requireCsrf } from '../identity/csrf.js'
-import { attendanceSummary, findCurrentSeason, listAbsencesForDate, listTeamMatches, listTeamPlayers, markAbsence, removeAbsence, updateConvocation } from './attendance-repository.js'
+import { attendanceSummary, createPlayer, findCurrentSeason, listAbsencesForDate, listSeasons, listTeamMatches, listTeamPlayers, markAbsence, removeAbsence, updateConvocation, updatePlayerStatus } from './attendance-repository.js'
 
 function params(request: { params: unknown }): { teamId: string; playerId?: string } {
   return request.params as { teamId: string; playerId?: string }
 }
 
 export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
+  app.get('/api/v1/seasons', async (request, reply) => {
+    const user = await requireAuthenticatedUser(request, reply)
+    if (!user) return
+    return { items: await listSeasons(user.clubId) }
+  })
+
   app.get('/api/v1/seasons/current', async (request, reply) => {
     const user = await requireAuthenticatedUser(request, reply)
     if (!user) return
@@ -22,7 +28,36 @@ export async function attendanceRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/v1/teams/:teamId/players', async (request, reply) => {
     const user = await requireAuthenticatedUser(request, reply)
     if (!user) return
-    return { items: await listTeamPlayers(user.clubId, params(request).teamId) }
+    const query = request.query as { includeInactive?: string }
+    return { items: await listTeamPlayers(user.clubId, params(request).teamId, query.includeInactive === 'true') }
+  })
+
+  app.post('/api/v1/teams/:teamId/players', async (request, reply) => {
+    if (!(await requireCsrf(request, reply))) return
+    const user = await requireRole(request, reply, ['club_admin', 'coordinator', 'coach'])
+    if (!user) return
+    const input = createPlayerInputSchema.safeParse(request.body)
+    if (!input.success) return reply.code(400).send({ error: { code: 'VALIDATION_ERROR', message: 'Los datos del jugador no son válidos', details: input.error.flatten() } })
+    try {
+      const player = await createPlayer(user.clubId, params(request).teamId, input.data)
+      await recordAuditEvent({ clubId: user.clubId, actorUserId: user.id, action: 'player.created', entityType: 'player', entityId: player.id, metadata: { teamId: params(request).teamId } })
+      return reply.code(201).send(player)
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('no existe')) return reply.code(404).send({ error: { code: 'TEAM_NOT_FOUND', message: error.message } })
+      throw error
+    }
+  })
+
+  app.patch('/api/v1/teams/:teamId/players/:playerId/status', async (request, reply) => {
+    if (!(await requireCsrf(request, reply))) return
+    const user = await requireRole(request, reply, ['club_admin', 'coordinator', 'coach'])
+    if (!user) return
+    const input = updatePlayerStatusInputSchema.safeParse(request.body)
+    if (!input.success) return reply.code(400).send({ error: { code: 'VALIDATION_ERROR', message: 'El estado del jugador no es válido' } })
+    const player = await updatePlayerStatus(user.clubId, params(request).teamId, params(request).playerId!, input.data.status)
+    if (!player) return reply.code(404).send({ error: { code: 'PLAYER_NOT_FOUND', message: 'El jugador no existe en el equipo' } })
+    await recordAuditEvent({ clubId: user.clubId, actorUserId: user.id, action: 'player.status_updated', entityType: 'player', entityId: player.id, metadata: { teamId: params(request).teamId, status: input.data.status } })
+    return player
   })
 
   app.get('/api/v1/teams/:teamId/attendance/today', async (request, reply) => {

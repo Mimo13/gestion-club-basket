@@ -9,15 +9,17 @@
 - **Completado en este paso:** contratos compartidos, endpoint autenticado `GET /api/v1/activities`, cliente API y pantalla `/calendar` con filtro por equipo e intervalo de fechas; la agenda muestra entrenamientos y partidos con estado, rival, sede, competición y notas.
 - **Verificación anterior:** `pnpm -r typecheck`, tests de contratos (3), tests de API (7) y `pnpm --filter @club-basket/web build` pasaban correctamente. El build mantiene únicamente el aviso existente de bundle superior a 500 kB.
 - **Completado en este paso:** creación y edición de entrenamientos y partidos desde `/calendar`, cancelación segura, permisos para administración/coordinación/cuerpo técnico, validación compartida y auditoría de cambios.
-- **Completado en este paso:** instaladas y configuradas las pruebas web con Testing Library, `user-event`, `jest-dom` y `jsdom`; añadidas pruebas de interacción de agenda, permisos/reglas de dominio y utilidades de calendario.
-- **Completado en este paso:** agenda con vistas Día/Semana/Mes, rango calculado desde una fecha de referencia, agrupación cronológica por día y filtros más adecuados para móvil.
-- **Verificación actual:** `pnpm -r typecheck`, `pnpm -r test` y `pnpm --filter @club-basket/web build` pasan; hay 20 tests ejecutados en el workspace (4 contratos, 4 dominio, 1 cliente, 7 API y 4 web). El build mantiene únicamente el aviso de bundle superior a 500 kB.
+- **Completado en el paso anterior:** instaladas y configuradas las pruebas web con Testing Library, `user-event`, `jest-dom` y `jsdom`; añadidas pruebas de interacción de agenda, permisos/reglas de dominio y utilidades de calendario.
+- **Completado en el paso anterior:** agenda con vistas Día/Semana/Mes, rango calculado desde una fecha de referencia, agrupación cronológica por día y filtros más adecuados para móvil.
+- **Completado en este paso:** filtro de agenda por temporada con endpoint/listado compartido de temporadas y consulta restringida a equipos de la temporada seleccionada.
+- **Completado en este paso:** primera gestión de jugadores: listado por equipo, alta validada, baja lógica/reactivación, permisos para cuerpo técnico y auditoría de cambios; Asistencia sólo consulta jugadores activos.
+- **Verificación actual:** `pnpm -r typecheck`, `pnpm -r test` y `pnpm --filter @club-basket/web build` pasan; el build mantiene únicamente el aviso de bundle superior a 500 kB.
 - **Pendiente conocido:** quedan por cubrir filtros por temporada, pruebas E2E móviles y gestión de personas/jugadores.
 
 ### Continuación recomendada
 
-1. Completar filtros de agenda por temporada y pruebas E2E en viewport móvil/tablet.
-2. Implementar gestión de personas y jugadores para eliminar los datos de plantilla de prueba y permitir altas/bajas desde la aplicación.
+1. Añadir pruebas E2E en viewport móvil/tablet y completar filtros de agenda por temporada en las vistas de aceptación.
+2. Completar edición de datos personales, posiciones, contactos y cambios históricos de equipo.
 3. Añadir estados de asistencia presente, retraso y ausencia justificada con trazabilidad por actividad.
 
 Para continuar: revisar primero `apps/web/src/features/calendar/CalendarPage.tsx`, `apps/web/src/features/calendar/calendar-utils.ts` y `packages/contracts/src/index.ts`; el siguiente incremento debe añadir filtro por temporada y comenzar gestión de personas/jugadores sin introducir todavía estadísticas avanzadas.
@@ -115,9 +117,10 @@ No se debe empezar por un dashboard complejo sin validar primero el trabajo del 
 
 ### Personas y plantillas
 
-- [ ] Jugadores con datos básicos, dorsal, posiciones y estado.
+- [x] Jugadores con datos básicos, dorsal y estado.
 - [ ] Entrenadores y relación con equipos.
-- [ ] Gestión de altas, bajas y cambios de equipo sin perder histórico.
+- [x] Gestión inicial de altas y bajas sin borrar el registro.
+- [ ] Cambios de equipo sin perder histórico.
 
 ### Entrenamientos
 
@@ -131,7 +134,7 @@ No se debe empezar por un dashboard complejo sin validar primero el trabajo del 
 - [x] Crear calendario de partidos y rival.
 - [x] Vista inicial de agenda por intervalo y equipo adaptada a móvil.
 - [x] Filtrar por equipo.
-- [ ] Filtrar por temporada.
+- [x] Filtrar por temporada.
 - [x] Estados de partido: planificado, jugado, suspendido y cancelado.
 
 ### UX y pruebas
