@@ -1,20 +1,14 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError, createApiClient } from '@club-basket/api-client'
 import type { Activity, CreateActivityInput, UpdateActivityInput } from '@club-basket/contracts'
 import { useAuth } from '../auth/AuthProvider.js'
+import { dateInputValue, getCalendarRange, groupActivitiesByDate, type CalendarView } from './calendar-utils.js'
 
 const api = createApiClient(import.meta.env.VITE_API_URL ?? 'http://localhost:3000')
 
 type CalendarFilter = 'all' | string
 type ActivityForm = { type: 'training' | 'match'; teamId: string; startsAt: string; endsAt: string; venueName: string; notes: string; opponentName: string; isHome: boolean; competition: string }
-
-function dateInputValue(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 function dateTimeInputValue(value: string): string {
   const date = new Date(value)
@@ -47,15 +41,16 @@ export function CalendarPage() {
   const canManage = user?.role === 'club_admin' || user?.role === 'coordinator' || user?.role === 'coach'
   const queryClient = useQueryClient()
   const today = dateInputValue(new Date())
-  const thirtyDaysLater = new Date(); thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30)
   const [selectedTeamId, setSelectedTeamId] = useState<CalendarFilter>('all')
-  const [fromDate, setFromDate] = useState(today)
-  const [toDate, setToDate] = useState(dateInputValue(thirtyDaysLater))
+  const [calendarView, setCalendarView] = useState<CalendarView>('week')
+  const [anchorDate, setAnchorDate] = useState(today)
+  const calendarRange = getCalendarRange(calendarView, anchorDate)
   const [form, setForm] = useState<ActivityForm | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const teamsQuery = useQuery({ queryKey: ['teams', 'calendar'], queryFn: () => api.listTeams({ status: 'active' }) })
-  const activitiesQuery = useQuery({ queryKey: ['activities', selectedTeamId, fromDate, toDate], queryFn: () => api.listActivities({ teamId: selectedTeamId === 'all' ? undefined : selectedTeamId, fromDate, toDate, limit: 100 }), enabled: Boolean(fromDate && toDate && fromDate <= toDate) })
+  const activitiesQuery = useQuery({ queryKey: ['activities', selectedTeamId, calendarView, calendarRange.fromDate, calendarRange.toDate], queryFn: () => api.listActivities({ teamId: selectedTeamId === 'all' ? undefined : selectedTeamId, fromDate: calendarRange.fromDate, toDate: calendarRange.toDate, limit: 100 }) })
+  const activityGroups = groupActivitiesByDate(activitiesQuery.data?.items ?? [])
   const saveMutation = useMutation({
     mutationFn: (input: CreateActivityInput | UpdateActivityInput) => editingId ? api.updateActivity(editingId, input as UpdateActivityInput) : api.createActivity(input as CreateActivityInput),
     onSuccess: () => { setForm(null); setEditingId(null); setError(null); void queryClient.invalidateQueries({ queryKey: ['activities'] }) },
@@ -66,8 +61,6 @@ export function CalendarPage() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['activities'] }),
     onError: (cause) => setError(cause instanceof ApiClientError ? cause.message : 'No se pudo cancelar la actividad'),
   })
-
-  useEffect(() => { if (selectedTeamId !== 'all' && !teamsQuery.data?.items.some((team) => team.id === selectedTeamId)) setSelectedTeamId('all') }, [selectedTeamId, teamsQuery.data])
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -84,15 +77,16 @@ export function CalendarPage() {
       <div className="page-heading"><div><p className="eyebrow">Planificación del club</p><h1>Agenda</h1></div>{canManage && <button className="primary-button" type="button" onClick={openCreate} disabled={!teamsQuery.data?.items.length}>Nueva actividad</button>}</div>
       <div className="settings-form calendar-filters">
         <label>Equipo<select value={selectedTeamId} onChange={(event) => setSelectedTeamId(event.target.value)}><option value="all">Todos los equipos</option>{teamsQuery.data?.items.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
-        <div className="form-grid-2"><label>Desde<input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} /></label><label>Hasta<input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} /></label></div>
+        <div className="calendar-view-picker" aria-label="Vista de agenda">{(['day', 'week', 'month'] as const).map((view) => <button className={calendarView === view ? 'view-button active' : 'view-button'} type="button" key={view} onClick={() => setCalendarView(view)}>{view === 'day' ? 'Día' : view === 'week' ? 'Semana' : 'Mes'}</button>)}</div>
+        <label>Fecha de referencia<input type="date" value={anchorDate} onChange={(event) => setAnchorDate(event.target.value)} /></label>
+        <p className="helper-text">Mostrando del {displayDate(calendarRange.fromDate)} al {displayDate(calendarRange.toDate)}.</p>
       </div>
       {form && <form className="settings-form activity-form" onSubmit={submit}><div className="form-heading"><h2>{editingId ? 'Editar actividad' : 'Nueva actividad'}</h2><button className="text-button" type="button" onClick={() => setForm(null)}>Cerrar</button></div><label>Tipo<select value={form.type} disabled={Boolean(editingId)} onChange={(event) => setForm({ ...form, type: event.target.value as ActivityForm['type'] })}><option value="training">Entrenamiento</option><option value="match">Partido</option></select></label><label>Equipo<select value={form.teamId} onChange={(event) => setForm({ ...form, teamId: event.target.value })} required><option value="">Selecciona un equipo</option>{teamsQuery.data?.items.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label><div className="form-grid-2"><label>Empieza<input type="datetime-local" value={form.startsAt} onChange={(event) => setForm({ ...form, startsAt: event.target.value })} required /></label><label>Termina<input type="datetime-local" value={form.endsAt} onChange={(event) => setForm({ ...form, endsAt: event.target.value })} /></label></div>{form.type === 'match' && <><label>Rival<input value={form.opponentName} onChange={(event) => setForm({ ...form, opponentName: event.target.value })} required /></label><label>Competición<input value={form.competition} onChange={(event) => setForm({ ...form, competition: event.target.value })} /></label><label className="checkbox-label"><input type="checkbox" checked={form.isHome} onChange={(event) => setForm({ ...form, isHome: event.target.checked })} /> Partido en casa</label></>}<label>Pabellón o lugar<input value={form.venueName} onChange={(event) => setForm({ ...form, venueName: event.target.value })} /></label><label>Notas<textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} rows={3} /></label>{error && <p className="form-error" role="alert">{error}</p>}<div className="category-actions"><button className="primary-button" type="submit" disabled={saveMutation.isPending || !form.teamId}>{saveMutation.isPending ? 'Guardando…' : 'Guardar actividad'}</button><button className="secondary-button" type="button" onClick={() => setForm(null)}>Cancelar</button></div></form>}
-      {fromDate > toDate && <p className="form-error" role="alert">La fecha final debe ser igual o posterior a la fecha inicial.</p>}
       {teamsQuery.isError && <p className="status-message error">No se han podido cargar los equipos para filtrar la agenda.</p>}
       {activitiesQuery.isLoading && <p className="status-message">Cargando agenda…</p>}
       {activitiesQuery.isError && <p className="status-message error">No se ha podido cargar la agenda.</p>}
       {activitiesQuery.data?.items.length === 0 && <div className="empty-card"><span className="empty-icon">◷</span><h2>No hay actividades en este intervalo</h2><p>Prueba a ampliar las fechas o selecciona todos los equipos.</p></div>}
-      <div className="activity-list">{activitiesQuery.data?.items.map((activity) => { const isMatch = activity.type === 'match'; const cancelled = activity.status === 'cancelled' || activity.matchStatus === 'cancelled'; return <article className={`activity-card ${isMatch ? 'match' : 'training'} ${cancelled ? 'cancelled' : ''}`} key={activity.id}><div className="activity-date"><strong>{displayDateTime(activity.startsAt)}</strong>{activity.endsAt && <span>Hasta {new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }).format(new Date(activity.endsAt))}</span>}</div><div className="activity-main"><span className="activity-type">{isMatch ? 'Partido' : 'Entrenamiento'}</span><h2>{isMatch ? `vs ${activity.opponentName}` : 'Entrenamiento'}</h2><p>{activity.teamName}{activity.venueName ? ` · ${activity.venueName}` : ''}</p>{isMatch && <p className="activity-detail">{activity.isHome ? 'Local' : 'Visitante'}{activity.competition ? ` · ${activity.competition}` : ''}</p>}{activity.notes && <p className="activity-detail">{activity.notes}</p>}</div><div className="activity-actions"><span className="activity-status">{cancelled ? 'Cancelado' : activity.status === 'completed' || activity.matchStatus === 'completed' ? 'Completado' : 'Planificado'}</span>{canManage && !cancelled && <><button className="text-button" type="button" onClick={() => openEdit(activity)}>Editar</button><button className="text-button danger-button" type="button" onClick={() => cancelMutation.mutate(activity)} disabled={cancelMutation.isPending}>Cancelar</button></>}</div></article> })}</div>
+      <div className="activity-list">{activityGroups.map((group) => <section className="activity-day" key={group.date}><h2 className="activity-day-heading">{displayDate(group.date)}</h2>{group.activities.map((activity) => { const isMatch = activity.type === 'match'; const cancelled = activity.status === 'cancelled' || activity.matchStatus === 'cancelled'; return <article className={`activity-card ${isMatch ? 'match' : 'training'} ${cancelled ? 'cancelled' : ''}`} key={activity.id}><div className="activity-date"><strong>{displayDateTime(activity.startsAt)}</strong>{activity.endsAt && <span>Hasta {new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }).format(new Date(activity.endsAt))}</span>}</div><div className="activity-main"><span className="activity-type">{isMatch ? 'Partido' : 'Entrenamiento'}</span><h2>{isMatch ? `vs ${activity.opponentName}` : 'Entrenamiento'}</h2><p>{activity.teamName}{activity.venueName ? ` · ${activity.venueName}` : ''}</p>{isMatch && <p className="activity-detail">{activity.isHome ? 'Local' : 'Visitante'}{activity.competition ? ` · ${activity.competition}` : ''}</p>}{activity.notes && <p className="activity-detail">{activity.notes}</p>}</div><div className="activity-actions"><span className="activity-status">{cancelled ? 'Cancelado' : activity.status === 'completed' || activity.matchStatus === 'completed' ? 'Completado' : 'Planificado'}</span>{canManage && !cancelled && <><button className="text-button" type="button" onClick={() => openEdit(activity)}>Editar</button><button className="text-button danger-button" type="button" onClick={() => cancelMutation.mutate(activity)} disabled={cancelMutation.isPending}>Cancelar</button></>}</div></article> })}</section>)}</div>
     </section>
   )
 }
