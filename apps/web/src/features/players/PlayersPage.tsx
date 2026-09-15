@@ -1,12 +1,14 @@
+import { Link, useParams } from 'react-router-dom'
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError, createApiClient } from '@club-basket/api-client'
 
-const api = createApiClient(import.meta.env.VITE_API_URL ?? 'http://localhost:3000')
+const api = createApiClient(import.meta.env.VITE_API_URL ?? '')
 
 export function PlayersPage() {
   const queryClient = useQueryClient()
-  const [teamId, setTeamId] = useState('')
+  const { teamId: routeTeamId } = useParams()
+  const [teamId, setTeamId] = useState(routeTeamId ?? '')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [birthDate, setBirthDate] = useState('')
@@ -40,7 +42,7 @@ export function PlayersPage() {
       {playersQuery.isError && <p className="status-message error">No se han podido cargar los jugadores.</p>}
       {!teamId && <div className="empty-card"><span className="empty-icon">🏀</span><h2>Selecciona un equipo</h2><p>Elige un equipo para gestionar su plantilla.</p></div>}
       {teamId && playersQuery.data?.items.length === 0 && <div className="empty-card"><span className="empty-icon">👤</span><h2>Aún no hay jugadores</h2><p>Añade el primer jugador de este equipo.</p></div>}
-      <div className="player-list">{playersQuery.data?.items.map((player) => <article className={`player-card ${player.status !== 'active' ? 'inactive-player' : ''}`} key={player.id}><div className="player-number">{player.jerseyNumber ?? '—'}</div><div className="player-info"><strong>{player.fullName}</strong><span>{player.birthDate} · {player.status === 'active' ? 'Activo' : 'Inactivo'}</span></div>{player.status === 'active' ? <button className="absence-button" type="button" onClick={() => statusMutation.mutate({ playerId: player.id, status: 'inactive' })}>Dar de baja</button> : <button className="secondary-button" type="button" onClick={() => statusMutation.mutate({ playerId: player.id, status: 'active' })}>Reactivar</button>}</article>)}</div>
+      <div className="player-list">{playersQuery.data?.items.map((player) => <div className={`player-card ${player.status !== 'active' ? 'inactive-player' : ''}`} key={player.id}><Link className="player-card-main" to={`/players/${player.id}`}><div className="player-number">{player.jerseyNumber ?? '—'}</div><div className="player-info"><strong>{player.fullName}</strong><span>{player.birthDate} · {player.status === 'active' ? 'Activo' : 'Inactivo'}</span></div><span className="row-chevron">›</span></Link>{player.status === 'active' ? <button className="absence-button" type="button" onClick={() => statusMutation.mutate({ playerId: player.id, status: 'inactive' })}>Dar de baja</button> : <button className="secondary-button" type="button" onClick={() => statusMutation.mutate({ playerId: player.id, status: 'active' })}>Reactivar</button>}</div>)}</div>
     </section>
   )
 }

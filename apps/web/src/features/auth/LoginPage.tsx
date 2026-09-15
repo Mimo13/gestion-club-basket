@@ -42,8 +42,8 @@ export function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="login-title">
-        <div className="auth-logo" aria-hidden="true">🏀</div>
-        <p className="eyebrow">Club Basket</p>
+        <div className="auth-logo"><img src="/branding/logo-club-cartama.svg" alt="Club Baloncesto Cártama" /></div>
+        <p className="eyebrow">Club Baloncesto Cártama</p>
         <h1 id="login-title">Iniciar sesión</h1>
         <p className="auth-intro">Accede a la gestión de tus equipos y actividades.</p>
         <form className="auth-form" onSubmit={handleSubmit}>

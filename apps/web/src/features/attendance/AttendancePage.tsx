@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError, createApiClient } from '@club-basket/api-client'
 import type { Player } from '@club-basket/contracts'
 
-const api = createApiClient(import.meta.env.VITE_API_URL ?? 'http://localhost:3000')
+const api = createApiClient(import.meta.env.VITE_API_URL ?? '')
 
-function today(): string { return new Date().toISOString().slice(0, 10) }
+function today(): string { return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Madrid' }).format(new Date()) }
 function displayDate(value: string): string { return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(`${value}T12:00:00`)) }
 
 export function AttendancePage() {
   const queryClient = useQueryClient()
   const trainingDate = today()
-  const [selectedTeamId, setSelectedTeamId] = useState('')
+  const { teamId: routeTeamId } = useParams()
+  const [selectedTeamId, setSelectedTeamId] = useState(routeTeamId ?? '')
   const [fromMatch, setFromMatch] = useState('')
   const [toMatch, setToMatch] = useState('')
   const [message, setMessage] = useState<string | null>(null)

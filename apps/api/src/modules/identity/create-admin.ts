@@ -22,7 +22,7 @@ try {
     displayName,
     passwordHash: await hashPassword(password),
     clubId,
-    role: 'club_admin',
+    roles: ['club_admin'],
   })
   console.log(`Administrador creado: ${user.email} (${user.id})`)
 } finally {

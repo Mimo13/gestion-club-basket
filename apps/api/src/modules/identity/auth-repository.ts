@@ -14,6 +14,8 @@ interface UserRow {
   password_hash: string | null
   club_id: string
   role: Role
+  roles: Role[] | string
+  team_ids: string[] | string
 }
 
 export interface ManagedUser {
@@ -22,25 +24,44 @@ export interface ManagedUser {
   displayName: string
   status: 'active' | 'invited' | 'disabled'
   role: Role
+  roles: Role[]
   clubId: string
   createdAt: string
+  teamIds: string[]
 }
 
-export interface UserSession {
+interface ManagedUserRow {
   id: string
-  createdAt: string
-  expiresAt: string
-  revokedAt: string | null
-  current: boolean
+  email: string
+  displayName: string
+  status: ManagedUser['status']
+  role: Role
+  roles: Role[] | string
+  clubId: string
+  createdAt: string | Date
+  teamIds: string[] | string
 }
 
-function mapUser(row: UserRow): AuthenticatedUser {
+function arrayValue<T extends string>(value: T[] | string | null | undefined): T[] {
+  if (Array.isArray(value)) return value
+  if (!value) return []
+  return value.replace(/^\{(.*)\}$/, '$1').split(',').map((item) => item.replace(/^"|"$/g, '').trim()).filter(Boolean) as T[]
+}
+
+function primaryRole(roles: Role[]): Role {
+  return (['club_admin', 'coordinator', 'coach', 'assistant', 'viewer'] as const).find((role) => roles.includes(role)) ?? 'viewer'
+}
+
+export function mapUser(row: UserRow): AuthenticatedUser {
+  const roles = arrayValue<Role>(row.roles).length > 0 ? arrayValue<Role>(row.roles) : [row.role]
   return {
     id: row.id,
     email: row.email,
     displayName: row.display_name,
     clubId: row.club_id,
-    role: row.role,
+    role: primaryRole(roles),
+    roles,
+    teamIds: arrayValue<string>(row.team_ids),
   }
 }
 
@@ -49,7 +70,8 @@ function hashSecret(secret: string): string {
 }
 
 const userQuery = `
-  SELECT u.id, u.email, u.display_name, u.password_hash, cm.club_id, cm.role
+  SELECT u.id, u.email, u.display_name, u.password_hash, cm.club_id, cm.role, cm.roles,
+         COALESCE((SELECT array_agg(utc.team_id) FROM user_team_coaches utc WHERE utc.user_id = u.id), '{}') AS team_ids
   FROM users u
   JOIN club_memberships cm ON cm.user_id = u.id
 `
@@ -150,18 +172,52 @@ export async function updateUserPassword(userId: string, passwordHash: string, k
 }
 
 export async function findManagedUsers(clubId: string): Promise<ManagedUser[]> {
-  const result = await db.query<ManagedUser>(
+  const result = await db.query<ManagedUserRow>(
     `SELECT u.id, u.email, u.display_name AS "displayName", u.status,
-            cm.role, cm.club_id AS "clubId", u.created_at AS "createdAt"
+            cm.role, cm.roles, cm.club_id AS "clubId", u.created_at AS "createdAt",
+            COALESCE(array_agg(utc.team_id) FILTER (WHERE utc.team_id IS NOT NULL), '{}') AS "teamIds"
      FROM users u JOIN club_memberships cm ON cm.user_id = u.id
-     WHERE cm.club_id = $1 ORDER BY u.display_name, u.email`,
+     LEFT JOIN user_team_coaches utc ON utc.user_id = u.id
+     WHERE cm.club_id = $1
+     GROUP BY u.id, cm.club_id, cm.role, cm.roles
+     ORDER BY u.display_name, u.email`,
     [clubId],
   )
-  return result.rows.map((row) => ({ ...row, createdAt: new Date(row.createdAt).toISOString() }))
+  return result.rows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    displayName: row.displayName,
+    status: row.status,
+    role: row.role,
+    roles: arrayValue<Role>(row.roles).length > 0 ? arrayValue<Role>(row.roles) : [row.role],
+    clubId: row.clubId,
+    teamIds: arrayValue<string>(row.teamIds),
+    createdAt: new Date(row.createdAt).toISOString(),
+  }))
 }
 
-export async function changeMembershipRole(clubId: string, userId: string, role: Role): Promise<void> {
-  await db.query(`UPDATE club_memberships SET role = $3 WHERE club_id = $1 AND user_id = $2`, [clubId, userId, role])
+export async function changeMembershipRoles(clubId: string, userId: string, roles: Role[]): Promise<void> {
+  const mainRole = primaryRole(roles)
+  await db.query(`UPDATE club_memberships SET roles = $3::membership_role[], role = $4 WHERE club_id = $1 AND user_id = $2`, [clubId, userId, roles, mainRole])
+}
+
+export async function changeUserTeamIds(clubId: string, userId: string, teamIds: string[], assignedBy: string): Promise<void> {
+  const validTeams = await db.query<{ id: string }>(`SELECT id FROM teams WHERE club_id = $1 AND id = ANY($2::uuid[])`, [clubId, teamIds])
+  const validTeamIds = validTeams.rows.map((row) => row.id)
+  const client = await db.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(`DELETE FROM user_team_coaches WHERE user_id = $1 AND team_id IN (SELECT id FROM teams WHERE club_id = $2)`, [userId, clubId])
+    if (validTeamIds.length > 0) {
+      await client.query(`INSERT INTO user_team_coaches (user_id, team_id, assigned_by) SELECT $1, id, $3 FROM teams WHERE club_id = $2 AND id = ANY($4::uuid[]) ON CONFLICT DO NOTHING`, [userId, clubId, assignedBy, validTeamIds])
+    }
+    await client.query('COMMIT')
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
+  }
 }
 
 export async function changeUserStatus(clubId: string, userId: string, status: ManagedUser['status']): Promise<void> {
@@ -177,7 +233,7 @@ export async function createInvitedUser(input: {
   email: string
   displayName: string
   clubId: string
-  role: Role
+  roles: Role[]
 }): Promise<ManagedUser> {
   const client = await db.connect()
   try {
@@ -189,9 +245,9 @@ export async function createInvitedUser(input: {
     )
     const user = userResult.rows[0]
     if (!user) throw new Error('No se pudo crear el usuario invitado')
-    await client.query(`INSERT INTO club_memberships (club_id, user_id, role) VALUES ($1, $2, $3)`, [input.clubId, user.id, input.role])
+    await client.query(`INSERT INTO club_memberships (club_id, user_id, role, roles) VALUES ($1, $2, $3, $4::membership_role[])`, [input.clubId, user.id, primaryRole(input.roles), input.roles])
     await client.query('COMMIT')
-    return { id: user.id, email: user.email, displayName: user.display_name, status: user.status, role: input.role, clubId: input.clubId, createdAt: user.created_at.toISOString() }
+    return { id: user.id, email: user.email, displayName: user.display_name, status: user.status, role: primaryRole(input.roles), roles: input.roles, clubId: input.clubId, teamIds: [], createdAt: user.created_at.toISOString() }
   } catch (error) {
     await client.query('ROLLBACK')
     throw error
@@ -205,7 +261,7 @@ export async function createUserWithMembership(input: {
   displayName: string
   passwordHash: string
   clubId: string
-  role: Role
+  roles: Role[]
 }): Promise<AuthenticatedUser> {
   const client = await db.connect()
   try {
@@ -217,9 +273,9 @@ export async function createUserWithMembership(input: {
     )
     const user = userResult.rows[0]
     if (!user) throw new Error('No se pudo crear el usuario')
-    await client.query(`INSERT INTO club_memberships (club_id, user_id, role) VALUES ($1, $2, $3)`, [input.clubId, user.id, input.role])
+    await client.query(`INSERT INTO club_memberships (club_id, user_id, role, roles) VALUES ($1, $2, $3, $4::membership_role[])`, [input.clubId, user.id, primaryRole(input.roles), input.roles])
     await client.query('COMMIT')
-    return { id: user.id, email: user.email, displayName: user.display_name, clubId: input.clubId, role: input.role }
+    return { id: user.id, email: user.email, displayName: user.display_name, clubId: input.clubId, role: primaryRole(input.roles), roles: input.roles, teamIds: [] }
   } catch (error) {
     await client.query('ROLLBACK')
     throw error

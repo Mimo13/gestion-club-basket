@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { createActivityInputSchema, listActivitiesQuerySchema, paginatedActivitiesSchema, updateActivityInputSchema } from '@club-basket/contracts'
 import { canManageActivity } from '@club-basket/domain'
 import { recordAuditEvent } from '../../shared/audit.js'
-import { requireAuthenticatedUser } from '../identity/auth-context.js'
+import { canAccessTeam, canViewAllTeams, requireAuthenticatedUser } from '../identity/auth-context.js'
 import { createActivity, listActivities, updateActivity } from './activity-repository.js'
 
 export async function activityRoutes(app: FastifyInstance): Promise<void> {
@@ -13,7 +13,7 @@ export async function activityRoutes(app: FastifyInstance): Promise<void> {
     const input = createActivityInputSchema.safeParse(request.body)
     if (!input.success) return reply.code(400).send({ error: { code: 'VALIDATION_ERROR', message: 'Los datos de la actividad no son válidos', details: input.error.flatten() } })
     try {
-      const activity = await createActivity(user.clubId, input.data)
+      const activity = await createActivity(user.clubId, input.data, canViewAllTeams(user) ? undefined : user.teamIds)
       await recordAuditEvent({ clubId: user.clubId, actorUserId: user.id, action: 'activity.created', entityType: 'activity', entityId: activity.id, metadata: { type: activity.type, teamId: activity.teamId } })
       return reply.code(201).send(activity)
     } catch (error) {
@@ -30,7 +30,7 @@ export async function activityRoutes(app: FastifyInstance): Promise<void> {
     if (!input.success) return reply.code(400).send({ error: { code: 'VALIDATION_ERROR', message: 'Los datos de la actividad no son válidos', details: input.error.flatten() } })
     const activityId = String((request.params as { activityId: string }).activityId)
     try {
-      const activity = await updateActivity(user.clubId, activityId, input.data)
+      const activity = await updateActivity(user.clubId, activityId, input.data, canViewAllTeams(user) ? undefined : user.teamIds)
       if (!activity) return reply.code(404).send({ error: { code: 'ACTIVITY_NOT_FOUND', message: 'La actividad no existe' } })
       await recordAuditEvent({ clubId: user.clubId, actorUserId: user.id, action: 'activity.updated', entityType: 'activity', entityId: activity.id, metadata: { type: activity.type, teamId: activity.teamId, status: activity.status } })
       return reply.send(activity)
@@ -52,6 +52,6 @@ export async function activityRoutes(app: FastifyInstance): Promise<void> {
       })
     }
 
-    return paginatedActivitiesSchema.parse(await listActivities(user.clubId, query.data))
+    return paginatedActivitiesSchema.parse(await listActivities(user.clubId, query.data, canViewAllTeams(user) ? undefined : user.teamIds))
   })
 }

@@ -15,6 +15,8 @@ interface ActivityRow {
   opponent_name: string | null
   is_home: boolean | null
   competition: string | null
+  match_phase: Activity['matchPhase']
+  league_tier: Activity['leagueTier']
   match_status: Activity['matchStatus']
 }
 
@@ -32,6 +34,8 @@ function mapActivity(row: ActivityRow): Activity {
     opponentName: row.opponent_name,
     isHome: row.is_home,
     competition: row.competition,
+    matchPhase: row.match_phase,
+    leagueTier: row.league_tier,
     matchStatus: row.match_status,
   }
 }
@@ -43,7 +47,7 @@ async function findActivity(client: DbClient, clubId: string, activityId: string
     `SELECT a.id, a.team_id, t.name AS team_name,
             CASE WHEN m.id IS NULL THEN 'training' ELSE 'match' END AS type,
             a.starts_at, a.ends_at, a.status, v.name AS venue_name, a.notes,
-            m.opponent_name, m.is_home, m.competition, m.status AS match_status
+            m.opponent_name, m.is_home, m.competition, m.phase AS match_phase, m.league_tier AS league_tier, m.status AS match_status
      FROM activities a
      JOIN teams t ON t.id = a.team_id
      LEFT JOIN venues v ON v.id = a.venue_id
@@ -65,11 +69,11 @@ async function resolveVenue(client: DbClient, clubId: string, venueName: string 
   return result.rows[0]?.id ?? null
 }
 
-export async function createActivity(clubId: string, input: CreateActivityInput): Promise<Activity> {
+export async function createActivity(clubId: string, input: CreateActivityInput, allowedTeamIds?: string[]): Promise<Activity> {
   const client = await db.connect()
   try {
     await client.query('BEGIN')
-    const team = await client.query<{ id: string }>(`SELECT id FROM teams WHERE id = $1 AND club_id = $2`, [input.teamId, clubId])
+    const team = await client.query<{ id: string }>(`SELECT id FROM teams WHERE id = $1 AND club_id = $2 ${allowedTeamIds ? 'AND id = ANY($3::uuid[])' : ''}`, allowedTeamIds ? [input.teamId, clubId, allowedTeamIds] : [input.teamId, clubId])
     if (!team.rows[0]) throw new Error('El equipo no existe en el club')
     const venueId = await resolveVenue(client, clubId, input.venueName)
     const activity = await client.query<{ id: string }>(
@@ -81,9 +85,9 @@ export async function createActivity(clubId: string, input: CreateActivityInput)
     if (!activityId) throw new Error('No se pudo crear la actividad')
     if (input.type === 'match') {
       await client.query(
-        `INSERT INTO matches (activity_id, opponent_name, is_home, competition)
-         VALUES ($1, $2, $3, $4)`,
-        [activityId, input.opponentName, input.isHome, input.competition ?? null],
+        `INSERT INTO matches (activity_id, opponent_name, is_home, competition, phase, league_tier)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [activityId, input.opponentName, input.isHome, input.competition ?? null, input.phase, input.leagueTier ?? null],
       )
     }
     const created = await findActivity(client, clubId, activityId)
@@ -98,7 +102,7 @@ export async function createActivity(clubId: string, input: CreateActivityInput)
   }
 }
 
-export async function updateActivity(clubId: string, activityId: string, input: UpdateActivityInput): Promise<Activity | null> {
+export async function updateActivity(clubId: string, activityId: string, input: UpdateActivityInput, allowedTeamIds?: string[]): Promise<Activity | null> {
   const client = await db.connect()
   try {
     await client.query('BEGIN')
@@ -106,15 +110,15 @@ export async function updateActivity(clubId: string, activityId: string, input: 
       `SELECT a.id, CASE WHEN m.id IS NULL THEN 'training' ELSE 'match' END AS type
        FROM activities a JOIN teams t ON t.id = a.team_id
        LEFT JOIN matches m ON m.activity_id = a.id
-       WHERE a.id = $1 AND t.club_id = $2`,
-      [activityId, clubId],
+       WHERE a.id = $1 AND t.club_id = $2 ${allowedTeamIds ? 'AND t.id = ANY($3::uuid[])' : ''}`,
+      allowedTeamIds ? [activityId, clubId, allowedTeamIds] : [activityId, clubId],
     )
     if (!existing.rows[0]) {
       await client.query('ROLLBACK')
       return null
     }
     if (existing.rows[0].type !== input.type) throw new Error('No se puede cambiar el tipo de actividad')
-    const team = await client.query<{ id: string }>(`SELECT id FROM teams WHERE id = $1 AND club_id = $2`, [input.teamId, clubId])
+    const team = await client.query<{ id: string }>(`SELECT id FROM teams WHERE id = $1 AND club_id = $2 ${allowedTeamIds ? 'AND id = ANY($3::uuid[])' : ''}`, allowedTeamIds ? [input.teamId, clubId, allowedTeamIds] : [input.teamId, clubId])
     if (!team.rows[0]) throw new Error('El equipo no existe en el club')
     const venueId = await resolveVenue(client, clubId, input.venueName)
     await client.query(
@@ -125,10 +129,10 @@ export async function updateActivity(clubId: string, activityId: string, input: 
     )
     if (input.type === 'match') {
       await client.query(
-        `UPDATE matches m SET opponent_name = $1, is_home = $2, competition = $3,
-         status = CASE WHEN $4::activity_status = 'cancelled' THEN 'cancelled'::match_status ELSE m.status END,
-         updated_at = now() WHERE m.activity_id = $5`,
-        [input.opponentName, input.isHome, input.competition ?? null, input.status ?? null, activityId],
+        `UPDATE matches m SET opponent_name = $1, is_home = $2, competition = $3, phase = $4, league_tier = $5,
+         status = CASE WHEN $6::activity_status = 'cancelled' THEN 'cancelled'::match_status ELSE m.status END,
+         updated_at = now() WHERE m.activity_id = $7`,
+        [input.opponentName, input.isHome, input.competition ?? null, input.phase, input.leagueTier ?? null, input.status ?? null, activityId],
       )
     }
     const updated = await findActivity(client, clubId, activityId)
@@ -142,10 +146,14 @@ export async function updateActivity(clubId: string, activityId: string, input: 
   }
 }
 
-export async function listActivities(clubId: string, query: ListActivitiesQuery): Promise<PaginatedActivities> {
+export async function listActivities(clubId: string, query: ListActivitiesQuery, allowedTeamIds?: string[]): Promise<PaginatedActivities> {
   const conditions = ['t.club_id = $1']
-  const values: Array<string | number> = [clubId]
+  const values: Array<string | number | string[]> = [clubId]
 
+  if (allowedTeamIds) {
+    values.push(allowedTeamIds)
+    conditions.push(`t.id = ANY($${values.length}::uuid[])`)
+  }
   if (query.teamId) {
     values.push(query.teamId)
     conditions.push(`a.team_id = $${values.length}`)
@@ -182,6 +190,8 @@ export async function listActivities(clubId: string, query: ListActivitiesQuery)
             m.opponent_name,
             m.is_home,
             m.competition,
+            m.phase AS match_phase,
+            m.league_tier AS league_tier,
             m.status AS match_status
      FROM activities a
      JOIN teams t ON t.id = a.team_id

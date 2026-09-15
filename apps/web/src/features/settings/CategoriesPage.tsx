@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError, createApiClient } from '@club-basket/api-client'
 import type { Category, CreateCategoryInput, UpdateCategoryInput } from '@club-basket/contracts'
 
-const api = createApiClient(import.meta.env.VITE_API_URL ?? 'http://localhost:3000')
+const api = createApiClient(import.meta.env.VITE_API_URL ?? '')
 
 const emptyForm: CreateCategoryInput = {
   name: '', ageMin: null, ageMax: null, birthYearFrom: null, birthYearTo: null, birthYearLabel: null, sortOrder: 100,

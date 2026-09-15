@@ -23,7 +23,8 @@ export function ResetPasswordPage() {
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="reset-title">
-        <p className="eyebrow">Club Basket</p>
+        <div className="auth-logo"><img src="/branding/logo-club-cartama.svg" alt="Club Baloncesto Cártama" /></div>
+        <p className="eyebrow">Club Baloncesto Cártama</p>
         <h1 id="reset-title">Nueva contraseña</h1>
         <form className="auth-form" onSubmit={submit}>
           <label>Nueva contraseña<input type="password" autoComplete="new-password" minLength={12} value={password} onChange={(event) => setPassword(event.target.value)} required /></label>

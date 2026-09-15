@@ -16,6 +16,7 @@ import {
   createPasswordResetToken,
   createSession,
   findUserForLogin,
+  mapUser,
   revokeSession,
   updateUserPassword,
 } from './auth-repository.js'
@@ -59,7 +60,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     await recordAuditEvent({ clubId: user.club_id, actorUserId: user.id, action: 'auth.login', entityType: 'user', entityId: user.id })
 
     return reply.send(sessionResponseSchema.parse({
-      user: { id: user.id, email: user.email, displayName: user.display_name, clubId: user.club_id, role: user.role },
+      user: mapUser(user),
       expiresAt: expiresAt.toISOString(),
       accessToken: input.data.client === 'mobile' ? token : undefined,
     }))

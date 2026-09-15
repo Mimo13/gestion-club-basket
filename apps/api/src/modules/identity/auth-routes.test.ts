@@ -39,6 +39,24 @@ describe('identity routes', () => {
     await app.close()
   })
 
+  it('returns managed users with normalized profile and team arrays', async () => {
+    const app = buildApp()
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: testEmail, password: testPassword },
+    })
+    const setCookie = login.headers['set-cookie']
+    const cookies = (Array.isArray(setCookie) ? setCookie : [setCookie]).filter((value): value is string => Boolean(value))
+    const cookie = cookies.map((value) => value.split(';')[0]).join('; ')
+
+    const response = await app.inject({ method: 'GET', url: '/api/v1/admin/users', headers: { cookie } })
+    expect(response.statusCode).toBe(200)
+    expect(response.json().items[0].roles).toEqual(['club_admin'])
+    expect(response.json().items[0].teamIds).toEqual([])
+    await app.close()
+  })
+
   it('logs in, reads the session, protects teams and logs out', async () => {
     const app = buildApp()
     const login = await app.inject({

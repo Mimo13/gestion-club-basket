@@ -14,6 +14,7 @@
 - **Completado en este paso:** filtro de agenda por temporada con endpoint/listado compartido de temporadas y consulta restringida a equipos de la temporada seleccionada.
 - **Completado en este paso:** primera gestión de jugadores: listado por equipo, alta validada, baja lógica/reactivación, permisos para cuerpo técnico y auditoría de cambios; Asistencia sólo consulta jugadores activos.
 - **Verificación actual:** `pnpm -r typecheck`, `pnpm -r test` y `pnpm --filter @club-basket/web build` pasan; el build mantiene únicamente el aviso de bundle superior a 500 kB.
+- **Operativa de revisión actualizada:** `cbc.the13.eu` está publicado con Nginx aislado por hostname/IP pública, frontend same-origin, proxy `/api/` sólo hacia Club Basket y certificado Let’s Encrypt con renovación simulada correcta. La API pública sigue en modo revisión hasta configurar SMTP; no debe considerarse todavía despliegue productivo completo.
 - **Pendiente conocido:** quedan por cubrir filtros por temporada, pruebas E2E móviles y gestión de personas/jugadores.
 
 ### Continuación recomendada

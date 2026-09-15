@@ -26,6 +26,20 @@ export async function requireAuthenticatedUser(
   return user
 }
 
+export function hasRole(user: AuthenticatedUser, role: Role): boolean {
+  return user.roles.includes(role)
+}
+
+export function canViewAllTeams(user: AuthenticatedUser): boolean {
+  return hasRole(user, 'club_admin') || hasRole(user, 'coordinator')
+}
+
+export function canAccessTeam(user: AuthenticatedUser, teamId: string): boolean {
+  if (canViewAllTeams(user)) return true
+  const hasScopedTeamRole = hasRole(user, 'coach') || hasRole(user, 'assistant')
+  return hasScopedTeamRole && user.teamIds.includes(teamId)
+}
+
 export async function requireRole(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -33,7 +47,7 @@ export async function requireRole(
 ): Promise<AuthenticatedUser | undefined> {
   const user = await requireAuthenticatedUser(request, reply)
   if (!user) return undefined
-  if (!roles.includes(user.role)) {
+  if (!roles.some((role) => user.roles.includes(role))) {
     await reply.code(403).send({ error: { code: 'FORBIDDEN', message: 'No tienes permiso para esta operación' } })
     return undefined
   }

@@ -22,6 +22,9 @@ backups/
 /docs/*.xlsx
 /docs/*.pdf
 
+# Documento operativo local con credenciales y URLs privadas
+/docs/operacion-club-basket.md
+
 # IDE
 .idea/
 .vscode/*
