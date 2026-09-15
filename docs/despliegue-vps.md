@@ -25,10 +25,26 @@ Desde `/root/proyectos/gestion-equipos`:
 
 ```bash
 pnpm --filter @club-basket/web build
+cp -a /var/www/club-basket "/var/www/club-basket.backup-$(date +%Y%m%d-%H%M%S)"
+rm -rf /var/www/club-basket/assets /var/www/club-basket/index.html
 cp -a apps/web/dist/. /var/www/club-basket/
 ```
 
+El backup previo permite revertir copiando de nuevo el directorio de backup. Se borran `assets/` e `index.html` antes de copiar para no dejar bundles antiguos acumulados (los nombres llevan hash); `branding/` se conserva porque también viene en `apps/web/dist/`.
+
 La publicación sólo reemplaza los artefactos estáticos del frontend. No modifica la API ni la base de datos.
+
+### Backend
+
+La API pública corre con `tsx` directamente sobre el código fuente (`apps/api/src/server.ts`), así que no necesita build: basta reiniciar la unidad cuando cambien ficheros de `apps/api`.
+
+```bash
+systemctl restart club-basket-review-api.service
+```
+
+### Scripts que NO aplican a este VPS
+
+`scripts/update-linux.sh` está pensado para una instalación productiva en `/opt/club-basket` con unidad systemd persistente y `git checkout` del remoto. En este VPS no existe `/opt/club-basket` ni la unidad `club-basket-api.service`, por lo que ese script no debe ejecutarse aquí: el despliegue real es el de las secciones anteriores (build + copia estática + reinicio de la unidad de revisión).
 
 Después comprobar:
 
@@ -64,6 +80,20 @@ Cuando el usuario diga “local”, en este proyecto debe interpretarse como el 
 3. Reiniciar la API con `systemctl restart club-basket-review-api.service` cuando haya cambios de backend.
 4. Comprobar la URL pública y los nuevos assets por HTTPS.
 5. Informar sólo después de confirmar que la versión pública responde con los artefactos nuevos.
+
+## Operaciones de datos (PostgreSQL local)
+
+La base de datos de este VPS es la que usa la aplicación pública. Las sentencias destructivas deben confirmarse con el usuario y hacerse dentro de una transacción.
+
+```bash
+set -a; . ./.env; set +a
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -c "BEGIN;" \
+  -c "DELETE FROM training_absences ta USING training_sessions ts WHERE ta.training_session_id = ts.id AND ts.team_id = '<team-id>';" \
+  -c "COMMIT;"
+```
+
+Consultas de apoyo: número de faltas por equipo, listado de faltas con jugador y fecha, y comprobación posterior del borrado. El endpoint `DELETE /api/v1/teams/:teamId/attendance/absence/:playerId?trainingDate=AAAA-MM-DD` permite quitar una falta concreta desde la aplicación (ficha del jugador y pantalla de Asistencia).
 
 ## Comandos de verificación del proyecto
 
