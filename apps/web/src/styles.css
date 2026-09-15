@@ -172,6 +172,14 @@ h2 { font-size: 1rem; margin: 0 0 5px; }
 .data-list { display: grid; gap: 10px; }
 .data-list div { display: flex; justify-content: space-between; gap: 12px; }
 .data-list dd { font-weight: 750; margin: 0; text-align: right; }
+.absence-list { display: grid; gap: 8px; list-style: none; margin: 12px 0 0; padding: 0; }
+.absence-row { align-items: center; border-top: 1px solid var(--border); display: flex; gap: 12px; justify-content: space-between; min-height: 48px; padding: 6px 0; }
+.absence-row:first-child { border-top: 0; }
+.absence-date { color: var(--brand-deep); font-size: .88rem; font-weight: 700; }
+.absence-remove-button { background: #fff8f7; border: 1px solid #f5a6a0; border-radius: 12px; color: #a52a22; cursor: pointer; font-size: .75rem; font-weight: 800; min-height: 40px; padding: 0 14px; }
+.absence-remove-button:disabled { cursor: wait; opacity: .7; }
+.attendance-modal-actions { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.attendance-modal-actions .primary-button { width: auto; }
 .match-list, .roster-list { display: grid; gap: 10px; }
 .match-row, .roster-row { align-items: center; background: var(--surface-card); border: 1px solid var(--border); border-radius: 14px; color: var(--brand-deep); cursor: pointer; display: flex; gap: 12px; justify-content: space-between; min-height: 64px; padding: 10px 14px; text-align: left; width: 100%; }
 .match-row:hover, .match-row.selected { background: var(--brand-cream); border-color: var(--brand-yellow); }
